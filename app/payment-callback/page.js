@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 
-export default function PaymentCallback() {
+function PaymentCallbackContent() {
   const searchParams = useSearchParams()
   const [status, setStatus] = useState("processing")
   const orderId = searchParams.get("order_id")
@@ -77,5 +77,17 @@ export default function PaymentCallback() {
         <p className="text-gray-600">Please wait while we verify your payment.</p>
       </div>
     </div>
+  )
+}
+
+export default function PaymentCallback() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-emerald-600"></div>
+      </div>
+    }>
+      <PaymentCallbackContent />
+    </Suspense>
   )
 }

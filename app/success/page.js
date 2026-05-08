@@ -1,19 +1,17 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 
-export default function SuccessPage() {
+function SuccessPageContent() {
   const searchParams = useSearchParams()
   const [bookingDetails, setBookingDetails] = useState(null)
   const orderId = searchParams.get("order_id")
 
   useEffect(() => {
-    // Get booking details from sessionStorage
     const details = sessionStorage.getItem("bookingDetails")
     if (details) {
       setBookingDetails(JSON.parse(details))
-      // Clear after reading
       sessionStorage.removeItem("bookingDetails")
     }
   }, [])
@@ -21,7 +19,6 @@ export default function SuccessPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 flex items-center justify-center p-4">
       <div className="max-w-2xl w-full">
-        {/* Success Animation */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-24 h-24 bg-emerald-100 rounded-full mb-6 animate-bounce">
             <svg className="w-12 h-12 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -42,7 +39,6 @@ export default function SuccessPage() {
           </p>
         </div>
 
-        {/* Details Card */}
         <div className="bg-white rounded-2xl shadow-xl p-8 mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
             What Happens Next?
@@ -109,7 +105,6 @@ export default function SuccessPage() {
           )}
         </div>
 
-        {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <a
             href="/"
@@ -131,7 +126,6 @@ export default function SuccessPage() {
           </a>
         </div>
 
-        {/* Footer Note */}
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-500">
             Need help? Contact us at{" "}
@@ -142,5 +136,17 @@ export default function SuccessPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-emerald-600"></div>
+      </div>
+    }>
+      <SuccessPageContent />
+    </Suspense>
   )
 }
