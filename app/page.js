@@ -231,6 +231,27 @@ export default function HomePage() {
         throw new Error(orderData.error || "Failed to create order");
       }
 
+      // Store booking data in database as pending
+      const pendingBookingResponse = await fetch("/api/create-pending-booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId: orderData.order.orderId,
+          bookingData: {
+            fullName: formData.fullName,
+            email: formData.email,
+            mobileNumber: formData.mobileNumber,
+            businessIdea: formData.businessIdea,
+            shortDescription: formData.shortDescription,
+            amount: bookingPrice,
+          }
+        })
+      });
+
+      if (!pendingBookingResponse.ok) {
+        console.warn("Failed to create pending booking, continuing anyway");
+      }
+
       // Step 2: Initialize Cashfree SDK
       if (!window.Cashfree) {
         throw new Error("Cashfree SDK not loaded. Please refresh the page.");
@@ -245,16 +266,6 @@ export default function HomePage() {
         paymentSessionId: orderData.order.paymentSessionId,
         returnUrl: `${window.location.origin}/payment-callback?order_id=${orderData.order.orderId}`,
       };
-
-      // Store booking data for callback
-      sessionStorage.setItem("pendingBooking", JSON.stringify({
-        fullName: formData.fullName,
-        email: formData.email,
-        mobileNumber: formData.mobileNumber,
-        businessIdea: formData.businessIdea,
-        shortDescription: formData.shortDescription,
-        amount: bookingPrice,
-      }));
 
       cashfree.checkout(checkoutOptions).then(async (result) => {
         if (result.error) {

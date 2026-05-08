@@ -4,17 +4,16 @@ import { supabaseAdmin } from "@/lib/supabase"
 export async function POST(request) {
   try {
     const body = await request.json()
-    const { orderId, bookingData } = body
+    const { orderId } = body
 
     console.log("=== PAYMENT VERIFICATION STARTED ===")
     console.log("Order ID:", orderId)
-    console.log("Booking Data:", bookingData)
 
     // Validate input
-    if (!orderId || !bookingData) {
-      console.error("Missing required fields")
+    if (!orderId) {
+      console.error("Missing order ID")
       return NextResponse.json(
-        { success: false, error: "Missing required fields" },
+        { success: false, error: "Missing order ID" },
         { status: 400 }
       )
     }
@@ -28,18 +27,34 @@ export async function POST(request) {
       )
     }
 
-    // Check if booking already exists
-    const { data: existingBooking } = await supabaseAdmin
+    // Check if booking exists
+    const { data: existingBooking, error: fetchError } = await supabaseAdmin
       .from("consultation_bookings")
-      .select("id")
+      .select("*")
       .eq("cashfree_order_id", orderId)
       .single()
 
-    if (existingBooking) {
-      console.log("Booking already exists, skipping duplicate")
+    if (fetchError && fetchError.code !== "PGRST116") {
+      console.error("Database fetch error:", fetchError)
+      throw fetchError
+    }
+
+    if (!existingBooking) {
+      console.error("No booking found for order:", orderId)
+      return NextResponse.json(
+        { success: false, error: "Booking not found. Please contact support." },
+        { status: 404 }
+      )
+    }
+
+    console.log("Found existing booking:", existingBooking)
+
+    // If already paid, return success
+    if (existingBooking.payment_status === "paid") {
+      console.log("Booking already marked as paid")
       return NextResponse.json({
         success: true,
-        message: "Booking already exists",
+        message: "Booking already verified",
         booking: existingBooking,
       })
     }
@@ -103,45 +118,30 @@ export async function POST(request) {
     const payment = paymentsData[0] || {}
     console.log("Payment details:", payment)
 
-    // Prepare booking data
-    const bookingRecord = {
-      full_name: bookingData.fullName,
-      email: bookingData.email,
-      mobile_number: bookingData.mobileNumber,
-      business_idea: bookingData.businessIdea,
-      short_description: bookingData.shortDescription,
-      payment_amount: parseInt(bookingData.amount),
-      payment_status: "paid",
-      payment_gateway: "cashfree",
-      cashfree_order_id: orderId,
-      cashfree_payment_id: payment.cf_payment_id || null,
-      payment_method: payment.payment_group || "unknown",
-      payment_date: new Date().toISOString(),
-    }
-
-    console.log("Attempting to save booking to database:", bookingRecord)
-
-    // Use admin client for insert to bypass RLS
-    const { data, error } = await supabaseAdmin
+    // Update booking status to paid
+    const { data: updatedBooking, error: updateError } = await supabaseAdmin
       .from("consultation_bookings")
-      .insert([bookingRecord])
+      .update({
+        payment_status: "paid",
+        cashfree_payment_id: payment.cf_payment_id || null,
+        payment_method: payment.payment_group || "unknown",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("cashfree_order_id", orderId)
       .select()
 
-    if (error) {
-      console.error("Supabase insert error:", error)
-      console.error("Error code:", error.code)
-      console.error("Error message:", error.message)
-      console.error("Error details:", error.details)
-      throw error
+    if (updateError) {
+      console.error("Update error:", updateError)
+      throw updateError
     }
 
-    console.log("Booking saved successfully:", data)
+    console.log("Booking updated successfully:", updatedBooking)
     console.log("=== PAYMENT VERIFICATION COMPLETED ===")
 
     return NextResponse.json({
       success: true,
-      message: "Payment verified and booking saved",
-      booking: data[0],
+      message: "Payment verified and booking updated",
+      booking: updatedBooking[0],
     })
   } catch (error) {
     console.error("Payment verification error:", error)
