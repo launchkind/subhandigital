@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const trustAvatars = [
   { initials: "SA", tint: "bg-slate-950 text-white" },
@@ -169,6 +169,24 @@ export default function HomePage() {
     shortDescription: "",
   });
   const [isProcessing, setIsProcessing] = useState(false);
+  const [bookingPrice, setBookingPrice] = useState(999);
+
+  // Fetch booking price on component mount
+  useEffect(() => {
+    console.log("Fetching booking price...");
+    fetch("/api/settings/booking-price")
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("Booking price response:", data);
+        if (data.success) {
+          setBookingPrice(data.bookingPrice);
+          console.log("Booking price set to:", data.bookingPrice);
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to fetch booking price:", error);
+      });
+  }, []);
 
   const isMobileValid = /^\d{10}$/.test(formData.mobileNumber);
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
@@ -194,7 +212,7 @@ export default function HomePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: 48, // ₹48
+          amount: bookingPrice,
           customerName: formData.fullName,
           customerEmail: formData.email,
           customerPhone: formData.mobileNumber,
@@ -255,7 +273,7 @@ export default function HomePage() {
                   mobileNumber: formData.mobileNumber,
                   businessIdea: formData.businessIdea,
                   shortDescription: formData.shortDescription,
-                  amount: 48,
+                  amount: bookingPrice,
                 },
               }),
             });
@@ -416,7 +434,7 @@ export default function HomePage() {
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.28em] text-emerald-600">Booking form</p>
                 <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
-                  Reserve your slot for {"\u20B948"}
+                  Reserve your slot for ₹{bookingPrice}
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
                   Instant confirmation after payment and a quick follow-up from our team.
@@ -519,7 +537,7 @@ export default function HomePage() {
                     disabled={isProcessing}
                     className="inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-emerald-500 via-emerald-600 to-lime-500 px-5 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(22,163,74,0.34)] transition duration-300 hover:scale-[1.01] hover:shadow-[0_24px_60px_rgba(22,163,74,0.42)] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                   >
-                    {isProcessing ? "Processing..." : `Book Consultation for ${"\u20B948"}`}
+                    {isProcessing ? "Processing..." : `Book Consultation for ₹${bookingPrice}`}
                   </button>
                 </div>
 
