@@ -1,0 +1,46 @@
+✅ FIX APPLIED - READY TO DEPLOY
+
+ISSUE FIXED:
+- Cashfree requires HTTPS URLs in production
+- Your code was using http://localhost:3000
+
+SOLUTION:
+- API now auto-detects HTTPS URL from request headers
+- Forces HTTPS protocol for all return URLs
+
+═══════════════════════════════════════════════════════
+
+DEPLOY STEPS:
+
+1. COMMIT & PUSH:
+   git add .
+   git commit -m "Fix: Auto-detect HTTPS URL for Cashfree"
+   git push
+
+2. SET ENVIRONMENT VARIABLE IN VERCEL:
+   Go to: Vercel Dashboard → Settings → Environment Variables
+   
+   Add/Update:
+   NEXT_PUBLIC_APP_URL=https://subhandigital-one.vercel.app
+
+3. WAIT FOR DEPLOYMENT:
+   Vercel will auto-deploy in 1-2 minutes
+
+4. TEST:
+   Visit: https://subhandigital-one.vercel.app
+   Fill form → Click "Book Consultation for ₹48"
+   ✅ Should work!
+
+═══════════════════════════════════════════════════════
+
+WHAT WAS CHANGED:
+- app/api/cashfree/create-order/route.js
+  → Auto-detects HTTPS URL from request headers
+  → Forces HTTPS protocol (replaces http: with https:)
+
+- .env.local
+  → Updated to use https://localhost:3000
+
+═══════════════════════════════════════════════════════
+
+That's it! Deploy and test. 🚀

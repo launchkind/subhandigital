@@ -26,6 +26,14 @@ export async function POST(request) {
     // Generate unique order ID
     const orderId = `order_${Date.now()}_${Math.random().toString(36).substring(7)}`
 
+    // Get the return URL - use request headers in production
+    const host = request.headers.get('host')
+    const protocol = request.headers.get('x-forwarded-proto') || 'https'
+    const returnUrl = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`
+    
+    // Ensure HTTPS for production
+    const secureReturnUrl = returnUrl.replace(/^http:/, 'https:')
+
     // Create order request using REST API
     const orderData = {
       order_id: orderId,
@@ -38,7 +46,7 @@ export async function POST(request) {
         customer_phone: customerPhone,
       },
       order_meta: {
-        return_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}?order_id=${orderId}`,
+        return_url: `${secureReturnUrl}?order_id=${orderId}`,
       },
     }
 
