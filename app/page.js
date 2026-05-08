@@ -784,7 +784,7 @@ export default function HomePage() {
                       "Processing..."
                     ) : (
                       <>
-                        <span>{`🔥 Claim ₹1499 Slot for Just ${bookingPrice}`}</span>
+                        <span>Book now ₹{bookingPrice}</span>
                       </>
                     )}
                   </button>
