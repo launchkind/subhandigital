@@ -376,7 +376,7 @@ export default function HomePage() {
                   <div className="mt-4 rounded-xl border-2 border-lime-200 bg-lime-50/80 p-4 backdrop-blur-sm">
                     <p className="text-sm font-bold text-emerald-900 flex items-center gap-2">
                       <span className="text-lg">⏰</span>
-                      Why Just ₹1?
+                      Why Just {bookingPrice}?
                     </p>
                     <p className="mt-2 text-xs leading-5 text-emerald-800">
                       This is a <span className="font-bold">one-time launch offer</span> to help early founders get started. 
@@ -596,7 +596,7 @@ export default function HomePage() {
                 <div className="mt-4 rounded-xl border-2 border-lime-200 bg-lime-50/80 p-4 backdrop-blur-sm">
                   <p className="text-sm font-bold text-emerald-900 flex items-center gap-2">
                     <span className="text-lg">⏰</span>
-                    Why Just ₹1?
+                    Why Just {bookingPrice}?
                   </p>
                   <p className="mt-2 text-xs leading-5 text-emerald-800">
                     This is a <span className="font-bold">one-time launch offer</span> to help early founders get started. 
