@@ -246,6 +246,16 @@ export default function HomePage() {
         returnUrl: `${window.location.origin}/payment-callback?order_id=${orderData.order.orderId}`,
       };
 
+      // Store booking data for callback
+      sessionStorage.setItem("pendingBooking", JSON.stringify({
+        fullName: formData.fullName,
+        email: formData.email,
+        mobileNumber: formData.mobileNumber,
+        businessIdea: formData.businessIdea,
+        shortDescription: formData.shortDescription,
+        amount: bookingPrice,
+      }));
+
       cashfree.checkout(checkoutOptions).then(async (result) => {
         if (result.error) {
           console.error("Payment error:", result.error);
@@ -287,15 +297,15 @@ export default function HomePage() {
             const verifyData = await verifyResponse.json();
 
             if (verifyData.success) {
-              alert("🎉 Payment successful! Your consultation is booked. We'll contact you within 24 hours.");
-              // Reset form
-              setFormData({
-                fullName: "",
-                email: "",
-                mobileNumber: "",
-                businessIdea: "",
-                shortDescription: "",
-              });
+              // Store booking details for success page
+              sessionStorage.setItem("bookingDetails", JSON.stringify({
+                fullName: formData.fullName,
+                email: formData.email,
+                mobileNumber: formData.mobileNumber,
+              }));
+              
+              // Redirect to success page
+              window.location.href = `/success?order_id=${orderData.order.orderId}`;
             } else {
               throw new Error(verifyData.error || "Payment verification failed");
             }
