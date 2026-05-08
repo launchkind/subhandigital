@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server"
-import { supabaseAdmin } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase"
 
 export async function POST(request) {
   try {
     const { orderId, bookingData } = await request.json()
 
     console.log("Creating pending booking for order:", orderId)
+    console.log("Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL)
+    console.log("Service key exists:", !!process.env.SUPABASE_SERVICE_ROLE_KEY)
 
-    // Store booking with pending status
-    const { data, error } = await supabaseAdmin
+    // Use regular supabase client (RLS is disabled anyway)
+    const { data, error } = await supabase
       .from("consultation_bookings")
       .insert([{
         full_name: bookingData.fullName,

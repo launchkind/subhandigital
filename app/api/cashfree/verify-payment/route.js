@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { supabaseAdmin } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase"
 
 export async function POST(request) {
   try {
@@ -27,8 +27,8 @@ export async function POST(request) {
       )
     }
 
-    // Check if booking exists
-    const { data: existingBooking, error: fetchError } = await supabaseAdmin
+    // Check if booking exists (RLS is disabled, so regular client works)
+    const { data: existingBooking, error: fetchError } = await supabase
       .from("consultation_bookings")
       .select("*")
       .eq("cashfree_order_id", orderId)
@@ -118,8 +118,8 @@ export async function POST(request) {
     const payment = paymentsData[0] || {}
     console.log("Payment details:", payment)
 
-    // Update booking status to paid
-    const { data: updatedBooking, error: updateError } = await supabaseAdmin
+    // Update booking status to paid (RLS is disabled, so regular client works)
+    const { data: updatedBooking, error: updateError } = await supabase
       .from("consultation_bookings")
       .update({
         payment_status: "paid",

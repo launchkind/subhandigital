@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { supabase, supabaseAdmin } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase"
 
 export async function POST(request) {
   try {
@@ -12,8 +12,8 @@ export async function POST(request) {
       )
     }
 
-    // Verify the token using admin client
-    const { data: userData, error: authError } = await supabaseAdmin.auth.getUser(access_token)
+    // Verify the token using regular client
+    const { data: userData, error: authError } = await supabase.auth.getUser(access_token)
 
     if (authError || !userData.user) {
       return NextResponse.json(
@@ -24,8 +24,8 @@ export async function POST(request) {
 
     console.log("Fetching bookings from database...")
 
-    // Fetch all bookings using admin client
-    const { data: bookings, error } = await supabaseAdmin
+    // Fetch all bookings (RLS is disabled, so regular client works)
+    const { data: bookings, error } = await supabase
       .from("consultation_bookings")
       .select("*")
       .eq("payment_status", "paid")
