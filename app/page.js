@@ -47,23 +47,6 @@ function IconShell({ children }) {
   );
 }
 
-function WhatsAppIcon({ className = "h-4 w-4" }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M20.5 12a8.5 8.5 0 0 1-12.9 7.3L4 20l.8-3.4A8.5 8.5 0 1 1 20.5 12z"
-      />
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M9.5 9.5c.2-.5.4-.7.9-.7h.8c.3 0 .6.2.7.5l.7 1.8c.1.3 0 .6-.2.8l-.7.7c1 1.8 2.4 3.2 4.2 4.2l.7-.7c.2-.2.5-.3.8-.2l1.8.7c.3.1.5.4.5.7v.8c0 .5-.2.7-.7.9-.8.3-1.6.4-2.4.1-2.7-.9-5.6-3.8-6.5-6.5-.3-.8-.2-1.6.1-2.4z"
-      />
-    </svg>
-  );
-}
-
 function SparkIcon({ className = "h-4 w-4" }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
@@ -258,7 +241,7 @@ export default function HomePage() {
       }
 
       const cashfree = await window.Cashfree({
-        mode: "production", // Always use production mode
+        mode: "production",
       });
 
       // Step 3: Open Cashfree checkout
@@ -276,12 +259,10 @@ export default function HomePage() {
         }
 
         if (result.redirect) {
-          // Payment is being processed, will redirect
           console.log("Payment redirect:", result.redirect);
         }
 
         if (result.paymentDetails) {
-          // Payment completed, verify and save
           try {
             const verifyResponse = await fetch("/api/cashfree/verify-payment", {
               method: "POST",
@@ -308,14 +289,12 @@ export default function HomePage() {
             const verifyData = await verifyResponse.json();
 
             if (verifyData.success) {
-              // Store booking details for success page
               sessionStorage.setItem("bookingDetails", JSON.stringify({
                 fullName: formData.fullName,
                 email: formData.email,
                 mobileNumber: formData.mobileNumber,
               }));
               
-              // Redirect to success page
               window.location.href = `/success?order_id=${orderData.order.orderId}`;
             } else {
               throw new Error(verifyData.error || "Payment verification failed");
@@ -357,6 +336,193 @@ export default function HomePage() {
               </p>
             </div>
 
+            {/* Mobile: Show limited offer box and form after title/description */}
+            <div className="lg:hidden space-y-6">
+              <div className="relative overflow-hidden rounded-2xl border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 via-lime-50 to-green-50 p-6 shadow-[0_20px_60px_rgba(16,185,129,0.25)]">
+                <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-emerald-400/20 blur-3xl" />
+                <div className="absolute -bottom-6 -left-6 h-28 w-28 rounded-full bg-lime-400/20 blur-3xl" />
+                
+                <div className="relative">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-600 to-lime-600 px-4 py-1.5 text-xs font-black uppercase tracking-wider text-white shadow-lg animate-pulse">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75"></span>
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-white"></span>
+                    </span>
+                    ⚡ FLASH SALE
+                  </div>
+                  
+                  <div className="mt-5 space-y-2">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-start gap-1">
+                        <span className="text-2xl font-bold text-emerald-600">₹</span>
+                        <span className="text-7xl font-black tracking-tighter text-emerald-600 leading-none">{bookingPrice}</span>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-3xl font-black text-slate-400 line-through decoration-2">₹1499</span>
+                        <span className="inline-block rounded-lg bg-gradient-to-r from-emerald-600 to-lime-600 px-3 py-1 text-sm font-black text-white shadow-md">
+                          SAVE {Math.round(((1499 - bookingPrice) / 1499) * 100)}%
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="inline-flex items-center gap-2 rounded-lg bg-emerald-100 border-2 border-emerald-300 px-3 py-2">
+                      <svg className="h-5 w-5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-sm font-bold text-emerald-900">First 50 Founders Only</span>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 rounded-xl border-2 border-lime-200 bg-lime-50/80 p-4 backdrop-blur-sm">
+                    <p className="text-sm font-bold text-emerald-900 flex items-center gap-2">
+                      <span className="text-lg">⏰</span>
+                      Why Just ₹1?
+                    </p>
+                    <p className="mt-2 text-xs leading-5 text-emerald-800">
+                      This is a <span className="font-bold">one-time launch offer</span> to help early founders get started. 
+                      Regular price ₹1499 returns after 50 bookings. Don't miss out!
+                    </p>
+                  </div>
+                  
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <div className="rounded-xl border-2 border-emerald-200 bg-white/80 p-3 backdrop-blur-sm">
+                      <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">✓ No Spam</p>
+                      <p className="mt-1 text-xs text-slate-600">Pure value</p>
+                    </div>
+                    <div className="rounded-xl border-2 border-emerald-200 bg-white/80 p-3 backdrop-blur-sm">
+                      <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">✓ No Upsell</p>
+                      <p className="mt-1 text-xs text-slate-600">Just results</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-[1.75rem] border-2 border-emerald-200/80 bg-white/95 p-6 shadow-[0_24px_80px_rgba(16,185,129,0.15)] ring-1 ring-emerald-100/60 sm:p-8">
+                <div className="relative">
+                  <div className="absolute -right-4 -top-4 rounded-full bg-emerald-600 px-3 py-1 text-xs font-bold text-white shadow-lg animate-pulse">
+                    🔥 HOT DEAL
+                  </div>
+                  <p className="text-sm font-semibold uppercase tracking-[0.28em] text-emerald-600">Book Now</p>
+                  <p className="mt-2 text-sm font-semibold leading-6 text-slate-700">
+                    Reserve your consultation slot at the lowest price ever!
+                  </p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+                  <div className="space-y-4">
+                    <FloatingField
+                      id="fullName-mobile"
+                      name="fullName"
+                      type="text"
+                      autoComplete="name"
+                      required
+                      label="Full name"
+                      icon={<UserIcon className="h-4 w-4" />}
+                      value={formData.fullName}
+                      onChange={(event) =>
+                        setFormData((current) => ({ ...current, fullName: event.target.value }))
+                      }
+                    />
+
+                    <FloatingField
+                      id="email-mobile"
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      label="Email address"
+                      icon={
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.9 5.3c.7.4 1.5.4 2.2 0L21 8M5 19h14c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2z" />
+                        </svg>
+                      }
+                      value={formData.email}
+                      onChange={(event) =>
+                        setFormData((current) => ({ ...current, email: event.target.value }))
+                      }
+                    />
+                    {formData.email.length > 0 && !isEmailValid ? (
+                      <p className="text-xs text-rose-500">Enter a valid email address.</p>
+                    ) : null}
+
+                    <FloatingField
+                      id="mobileNumber-mobile"
+                      name="mobileNumber"
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]{10}"
+                      autoComplete="tel"
+                      required
+                      label="Mobile number"
+                      icon={<PhoneIcon className="h-4 w-4" />}
+                      value={formData.mobileNumber}
+                      onChange={(event) =>
+                        setFormData((current) => ({
+                          ...current,
+                          mobileNumber: event.target.value.replace(/\D/g, "").slice(0, 10),
+                        }))
+                      }
+                    />
+                    {formData.mobileNumber.length > 0 && !isMobileValid ? (
+                      <p className="text-xs text-rose-500">Enter a valid 10-digit mobile number.</p>
+                    ) : null}
+
+                    <FloatingField
+                      id="businessIdea-mobile"
+                      name="businessIdea"
+                      type="text"
+                      autoComplete="organization"
+                      required
+                      label="Business idea"
+                      icon={<IdeaIcon className="h-4 w-4" />}
+                      value={formData.businessIdea}
+                      onChange={(event) =>
+                        setFormData((current) => ({ ...current, businessIdea: event.target.value }))
+                      }
+                    />
+
+                    <FloatingField
+                      as="textarea"
+                      id="shortDescription-mobile"
+                      name="shortDescription"
+                      rows="5"
+                      required
+                      label="Short description"
+                      icon={<MessageIcon className="h-4 w-4" />}
+                      value={formData.shortDescription}
+                      onChange={(event) =>
+                        setFormData((current) => ({ ...current, shortDescription: event.target.value }))
+                      }
+                      className="resize-none"
+                    />
+                  </div>
+
+                  <div className="relative isolate pt-1">
+                    <div className="absolute inset-x-6 -bottom-2 -z-10 h-12 rounded-full bg-emerald-500/40 blur-2xl opacity-80" />
+                    <button
+                      type="submit"
+                      disabled={isProcessing}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 via-emerald-600 to-lime-500 px-5 py-4 text-base font-black text-white shadow-[0_18px_40px_rgba(16,185,129,0.4)] transition duration-300 hover:scale-[1.02] hover:shadow-[0_24px_60px_rgba(16,185,129,0.5)] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                    >
+                      {isProcessing ? (
+                        "Processing..."
+                      ) : (
+                        <>
+                          <span>⚡ Book Now for Just ₹{bookingPrice} (Worth ₹1499)</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="space-y-1.5 text-center">
+                    <p className="text-sm text-slate-500">Instant confirmation after payment</p>
+                    <p className="text-xs text-slate-500">Secure payment via Cashfree</p>
+                    <p className="text-xs text-slate-500">We will contact you within 24 hours</p>
+                  </div>
+                </form>
+              </div>
+            </div>
+
             <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200/80 bg-white/70 p-4 shadow-[0_18px_50px_rgba(15,23,42,0.06)] backdrop-blur-xl">
               <div className="flex -space-x-2">
                 {trustAvatars.map((avatar) => (
@@ -392,26 +558,62 @@ export default function HomePage() {
               ))}
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-5 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-700">Offer</p>
-                <p className="mt-2 text-sm font-medium text-emerald-950">Limited time founder offer</p>
-                <p className="mt-2 text-xs leading-5 text-emerald-800">
-                  Offer expires soon, so this pricing is reserved for a short window.
-                </p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Reassurance</p>
-                <p className="mt-2 text-sm font-medium text-slate-900">No spam, no upsell</p>
-                <p className="mt-2 text-xs leading-5 text-slate-500">Just a focused call and a clear next step.</p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Support</p>
-                <div className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-slate-900">
-                  <WhatsAppIcon className="h-4 w-4 text-emerald-600" />
-                  WhatsApp support available
+            <div className="hidden lg:block relative overflow-hidden rounded-2xl border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 via-lime-50 to-green-50 p-6 shadow-[0_20px_60px_rgba(16,185,129,0.25)]">
+              <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-emerald-400/20 blur-3xl" />
+              <div className="absolute -bottom-6 -left-6 h-28 w-28 rounded-full bg-lime-400/20 blur-3xl" />
+              
+              <div className="relative">
+                <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-600 to-lime-600 px-4 py-1.5 text-xs font-black uppercase tracking-wider text-white shadow-lg animate-pulse">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75"></span>
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-white"></span>
+                  </span>
+                  ⚡ FLASH SALE
                 </div>
-                <p className="mt-2 text-xs leading-5 text-slate-500">If you need help, just reach out before booking.</p>
+                
+                <div className="mt-5 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-start gap-1">
+                      <span className="text-2xl font-bold text-emerald-600">₹</span>
+                      <span className="text-7xl font-black tracking-tighter text-emerald-600 leading-none">{bookingPrice}</span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-3xl font-black text-slate-400 line-through decoration-2">₹1499</span>
+                      <span className="inline-block rounded-lg bg-gradient-to-r from-emerald-600 to-lime-600 px-3 py-1 text-sm font-black text-white shadow-md">
+                        SAVE 99.9%
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="inline-flex items-center gap-2 rounded-lg bg-emerald-100 border-2 border-emerald-300 px-3 py-2">
+                    <svg className="h-5 w-5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-sm font-bold text-emerald-900">First 50 Founders Only</span>
+                  </div>
+                </div>
+                
+                <div className="mt-4 rounded-xl border-2 border-lime-200 bg-lime-50/80 p-4 backdrop-blur-sm">
+                  <p className="text-sm font-bold text-emerald-900 flex items-center gap-2">
+                    <span className="text-lg">⏰</span>
+                    Why Just ₹1?
+                  </p>
+                  <p className="mt-2 text-xs leading-5 text-emerald-800">
+                    This is a <span className="font-bold">one-time launch offer</span> to help early founders get started. 
+                    Regular price ₹1499 returns after 50 bookings. Don't miss out!
+                  </p>
+                </div>
+                
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <div className="rounded-xl border-2 border-emerald-200 bg-white/80 p-3 backdrop-blur-sm">
+                    <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">✓ No Spam</p>
+                    <p className="mt-1 text-xs text-slate-600">Pure value</p>
+                  </div>
+                  <div className="rounded-xl border-2 border-emerald-200 bg-white/80 p-3 backdrop-blur-sm">
+                    <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">✓ No Upsell</p>
+                    <p className="mt-1 text-xs text-slate-600">Just results</p>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -450,16 +652,36 @@ export default function HomePage() {
             </div>
           </div>
 
-          <aside className="lg:sticky lg:top-6">
-            <div className="rounded-[1.75rem] border border-slate-200/80 bg-white/95 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.1)] ring-1 ring-white/60 sm:p-8">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.28em] text-emerald-600">Booking form</p>
-                <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
-                  Reserve your slot for ₹{bookingPrice}
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Instant confirmation after payment and a quick follow-up from our team.
+          <aside className="hidden lg:block lg:sticky lg:top-6">
+            <div className="rounded-[1.75rem] border-2 border-emerald-200/80 bg-white/95 p-6 shadow-[0_24px_80px_rgba(16,185,129,0.15)] ring-1 ring-emerald-100/60 sm:p-8">
+              <div className="relative">
+                <div className="absolute -right-4 -top-4 rounded-full bg-gradient-to-r from-emerald-600 to-lime-600 px-4 py-1.5 text-xs font-black text-white shadow-lg animate-pulse">
+                  ⚡ FLASH SALE
+                </div>
+                <p className="text-sm font-bold uppercase tracking-[0.28em] text-emerald-600">Limited Offer</p>
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-start gap-1">
+                      <span className="text-xl font-bold text-emerald-600">₹</span>
+                      <span className="text-6xl font-black tracking-tighter text-emerald-600 leading-none">{bookingPrice}</span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-2xl font-black text-slate-400 line-through decoration-2">₹1499</span>
+                      <span className="inline-block rounded-lg bg-gradient-to-r from-emerald-600 to-lime-600 px-2 py-1 text-xs font-black text-white shadow-md">
+                        {Math.round(((1499 - bookingPrice) / 1499) * 100)}% OFF
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <p className="mt-3 text-sm font-bold leading-6 text-slate-700">
+                  Grab your consultation at the lowest price ever!
                 </p>
+                <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 border-2 border-emerald-200">
+                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                  </svg>
+                  First 50 founders only
+                </div>
               </div>
 
               <form id="booking-form" onSubmit={handleSubmit} className="mt-8 space-y-6">
@@ -552,13 +774,19 @@ export default function HomePage() {
                 </div>
 
                 <div className="relative isolate pt-1">
-                  <div className="absolute inset-x-6 -bottom-2 -z-10 h-12 rounded-full bg-emerald-500/35 blur-2xl opacity-70" />
+                  <div className="absolute inset-x-6 -bottom-2 -z-10 h-12 rounded-full bg-emerald-500/40 blur-2xl opacity-80" />
                   <button
                     type="submit"
                     disabled={isProcessing}
-                    className="inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-emerald-500 via-emerald-600 to-lime-500 px-5 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(22,163,74,0.34)] transition duration-300 hover:scale-[1.01] hover:shadow-[0_24px_60px_rgba(22,163,74,0.42)] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 via-emerald-600 to-lime-500 px-5 py-4 text-base font-bold text-white shadow-[0_18px_40px_rgba(16,185,129,0.4)] transition duration-300 hover:scale-[1.02] hover:shadow-[0_24px_60px_rgba(16,185,129,0.5)] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                   >
-                    {isProcessing ? "Processing..." : `Book Consultation for ₹${bookingPrice}`}
+                    {isProcessing ? (
+                      "Processing..."
+                    ) : (
+                      <>
+                        <span>{`🔥 Claim ₹1499 Slot for Just ${bookingPrice}`}</span>
+                      </>
+                    )}
                   </button>
                 </div>
 
@@ -571,9 +799,7 @@ export default function HomePage() {
             </div>
           </aside>
         </section>
-
       </div>
-
     </main>
   );
 }
