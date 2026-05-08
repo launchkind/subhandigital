@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { supabase, supabaseAdmin } from "@/lib/supabase"
 
 export async function POST(request) {
   try {
@@ -12,8 +12,8 @@ export async function POST(request) {
       )
     }
 
-    // Verify the token
-    const { data: userData, error: authError } = await supabase.auth.getUser(access_token)
+    // Verify the token using admin client
+    const { data: userData, error: authError } = await supabaseAdmin.auth.getUser(access_token)
 
     if (authError || !userData.user) {
       return NextResponse.json(
@@ -22,21 +22,26 @@ export async function POST(request) {
       )
     }
 
-    // Fetch all bookings
-    const { data: bookings, error } = await supabase
+    console.log("Fetching bookings from database...")
+
+    // Fetch all bookings using admin client
+    const { data: bookings, error } = await supabaseAdmin
       .from("consultation_bookings")
       .select("*")
       .eq("payment_status", "paid")
       .order("payment_date", { ascending: false })
 
     if (error) {
+      console.error("Database fetch error:", error)
       throw error
     }
+
+    console.log(`Found ${bookings?.length || 0} bookings`)
 
     // Calculate stats
     const totalLeads = bookings?.length || 0
     const totalAmount = bookings?.reduce((sum, booking) => sum + (booking.payment_amount || 0), 0) || 0
-    const recentBookings = bookings?.slice(0, 10) || []
+    const recentBookings = bookings || []
 
     return NextResponse.json({
       success: true,

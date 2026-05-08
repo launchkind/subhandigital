@@ -1,13 +1,18 @@
 import { NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { supabaseAdmin } from "@/lib/supabase"
 
 export async function POST(request) {
   try {
     const body = await request.json()
     const { orderId, bookingData } = body
 
+    console.log("=== PAYMENT VERIFICATION STARTED ===")
+    console.log("Order ID:", orderId)
+    console.log("Booking Data:", bookingData)
+
     // Validate input
     if (!orderId || !bookingData) {
+      console.error("Missing required fields")
       return NextResponse.json(
         { success: false, error: "Missing required fields" },
         { status: 400 }
@@ -23,10 +28,28 @@ export async function POST(request) {
       )
     }
 
+    // Check if booking already exists
+    const { data: existingBooking } = await supabaseAdmin
+      .from("consultation_bookings")
+      .select("id")
+      .eq("cashfree_order_id", orderId)
+      .single()
+
+    if (existingBooking) {
+      console.log("Booking already exists, skipping duplicate")
+      return NextResponse.json({
+        success: true,
+        message: "Booking already exists",
+        booking: existingBooking,
+      })
+    }
+
     // Fetch order details from Cashfree
     const apiUrl = process.env.CASHFREE_ENV === "production"
       ? `https://api.cashfree.com/pg/orders/${orderId}`
       : `https://sandbox.cashfree.com/pg/orders/${orderId}`
+
+    console.log("Fetching order from Cashfree:", apiUrl)
 
     const response = await fetch(apiUrl, {
       method: "GET",
@@ -38,6 +61,7 @@ export async function POST(request) {
     })
 
     const orderData = await response.json()
+    console.log("Cashfree order response:", orderData)
 
     if (!response.ok) {
       console.error("Cashfree order fetch error:", {
@@ -52,11 +76,14 @@ export async function POST(request) {
 
     // Check if payment is successful
     if (orderData.order_status !== "PAID") {
+      console.error("Payment not completed:", orderData.order_status)
       return NextResponse.json(
         { success: false, error: `Payment ${orderData.order_status.toLowerCase()}` },
         { status: 400 }
       )
     }
+
+    console.log("Payment verified as PAID")
 
     // Fetch payment details
     const paymentsUrl = process.env.CASHFREE_ENV === "production"
@@ -74,32 +101,42 @@ export async function POST(request) {
 
     const paymentsData = await paymentsResponse.json()
     const payment = paymentsData[0] || {}
+    console.log("Payment details:", payment)
 
-    // Payment verified! Save to database
-    const { data, error } = await supabase
+    // Prepare booking data
+    const bookingRecord = {
+      full_name: bookingData.fullName,
+      email: bookingData.email,
+      mobile_number: bookingData.mobileNumber,
+      business_idea: bookingData.businessIdea,
+      short_description: bookingData.shortDescription,
+      payment_amount: parseInt(bookingData.amount),
+      payment_status: "paid",
+      payment_gateway: "cashfree",
+      cashfree_order_id: orderId,
+      cashfree_payment_id: payment.cf_payment_id || null,
+      payment_method: payment.payment_group || "unknown",
+      payment_date: new Date().toISOString(),
+    }
+
+    console.log("Attempting to save booking to database:", bookingRecord)
+
+    // Use admin client for insert to bypass RLS
+    const { data, error } = await supabaseAdmin
       .from("consultation_bookings")
-      .insert([
-        {
-          full_name: bookingData.fullName,
-          email: bookingData.email,
-          mobile_number: bookingData.mobileNumber,
-          business_idea: bookingData.businessIdea,
-          short_description: bookingData.shortDescription,
-          payment_amount: bookingData.amount,
-          payment_status: "paid",
-          payment_gateway: "cashfree",
-          cashfree_order_id: orderId,
-          cashfree_payment_id: payment.cf_payment_id || null,
-          payment_method: payment.payment_group || "unknown",
-          payment_date: new Date().toISOString(),
-        },
-      ])
+      .insert([bookingRecord])
       .select()
 
     if (error) {
-      console.error("Supabase error:", error)
+      console.error("Supabase insert error:", error)
+      console.error("Error code:", error.code)
+      console.error("Error message:", error.message)
+      console.error("Error details:", error.details)
       throw error
     }
+
+    console.log("Booking saved successfully:", data)
+    console.log("=== PAYMENT VERIFICATION COMPLETED ===")
 
     return NextResponse.json({
       success: true,
