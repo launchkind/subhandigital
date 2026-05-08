@@ -6,6 +6,23 @@ export async function POST(request) {
     const body = await request.json()
     const { orderId, bookingData } = body
 
+    // Validate input
+    if (!orderId || !bookingData) {
+      return NextResponse.json(
+        { success: false, error: "Missing required fields" },
+        { status: 400 }
+      )
+    }
+
+    // Validate Cashfree credentials
+    if (!process.env.CASHFREE_APP_ID || !process.env.CASHFREE_SECRET_KEY) {
+      console.error("Cashfree credentials missing")
+      return NextResponse.json(
+        { success: false, error: "Cashfree credentials not configured" },
+        { status: 500 }
+      )
+    }
+
     // Fetch order details from Cashfree
     const apiUrl = process.env.CASHFREE_ENV === "production"
       ? `https://api.cashfree.com/pg/orders/${orderId}`
@@ -23,13 +40,20 @@ export async function POST(request) {
     const orderData = await response.json()
 
     if (!response.ok) {
-      throw new Error(orderData.message || "Failed to fetch order")
+      console.error("Cashfree order fetch error:", {
+        status: response.status,
+        data: orderData,
+      })
+      return NextResponse.json(
+        { success: false, error: orderData.message || "Failed to fetch order" },
+        { status: response.status }
+      )
     }
 
     // Check if payment is successful
     if (orderData.order_status !== "PAID") {
       return NextResponse.json(
-        { error: `Payment ${orderData.order_status.toLowerCase()}` },
+        { success: false, error: `Payment ${orderData.order_status.toLowerCase()}` },
         { status: 400 }
       )
     }
@@ -85,8 +109,16 @@ export async function POST(request) {
   } catch (error) {
     console.error("Payment verification error:", error)
     return NextResponse.json(
-      { error: error.message || "Failed to verify payment" },
+      { success: false, error: error.message || "Failed to verify payment" },
       { status: 500 }
     )
   }
+}
+
+// Handle other HTTP methods
+export async function GET() {
+  return NextResponse.json(
+    { success: false, error: "Method not allowed" },
+    { status: 405 }
+  )
 }

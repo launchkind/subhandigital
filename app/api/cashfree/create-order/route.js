@@ -6,10 +6,19 @@ export async function POST(request) {
     const body = await request.json()
     const { amount, customerName, customerEmail, customerPhone } = body
 
+    // Validate input
+    if (!amount || !customerName || !customerEmail || !customerPhone) {
+      return NextResponse.json(
+        { success: false, error: "Missing required fields" },
+        { status: 400 }
+      )
+    }
+
     // Validate Cashfree credentials
     if (!process.env.CASHFREE_APP_ID || !process.env.CASHFREE_SECRET_KEY) {
+      console.error("Cashfree credentials missing")
       return NextResponse.json(
-        { error: "Cashfree credentials not configured" },
+        { success: false, error: "Cashfree credentials not configured" },
         { status: 500 }
       )
     }
@@ -57,7 +66,10 @@ export async function POST(request) {
         env: process.env.CASHFREE_ENV,
         appId: process.env.CASHFREE_APP_ID?.substring(0, 10) + "...",
       })
-      throw new Error(data.message || "Failed to create order")
+      return NextResponse.json(
+        { success: false, error: data.message || "Failed to create order" },
+        { status: response.status }
+      )
     }
 
     return NextResponse.json({
@@ -71,8 +83,16 @@ export async function POST(request) {
   } catch (error) {
     console.error("Cashfree order creation error:", error)
     return NextResponse.json(
-      { error: error.message || "Failed to create Cashfree order" },
+      { success: false, error: error.message || "Failed to create Cashfree order" },
       { status: 500 }
     )
   }
+}
+
+// Handle other HTTP methods
+export async function GET() {
+  return NextResponse.json(
+    { success: false, error: "Method not allowed" },
+    { status: 405 }
+  )
 }

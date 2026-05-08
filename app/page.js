@@ -201,6 +201,12 @@ export default function HomePage() {
         }),
       });
 
+      if (!orderResponse.ok) {
+        const errorText = await orderResponse.text();
+        console.error("Order API error:", errorText);
+        throw new Error(`Failed to create order: ${orderResponse.status}`);
+      }
+
       const orderData = await orderResponse.json();
 
       if (!orderData.success) {
@@ -208,8 +214,12 @@ export default function HomePage() {
       }
 
       // Step 2: Initialize Cashfree SDK
+      if (!window.Cashfree) {
+        throw new Error("Cashfree SDK not loaded. Please refresh the page.");
+      }
+
       const cashfree = await window.Cashfree({
-        mode: process.env.CASHFREE_ENV === "production" ? "production" : "sandbox",
+        mode: "production", // Always use production mode
       });
 
       // Step 3: Open Cashfree checkout
@@ -249,6 +259,12 @@ export default function HomePage() {
                 },
               }),
             });
+
+            if (!verifyResponse.ok) {
+              const errorText = await verifyResponse.text();
+              console.error("Verify API error:", errorText);
+              throw new Error(`Failed to verify payment: ${verifyResponse.status}`);
+            }
 
             const verifyData = await verifyResponse.json();
 
