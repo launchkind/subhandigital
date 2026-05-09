@@ -508,7 +508,7 @@ export default function HomePage() {
                         "Processing..."
                       ) : (
                         <>
-                          <span>⚡ Book Now for Just ₹{bookingPrice} (Worth ₹1499)</span>
+                          <span>⚡ Book Now {bookingPrice}</span>
                         </>
                       )}
                     </button>
