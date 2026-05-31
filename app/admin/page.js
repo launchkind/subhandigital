@@ -22,10 +22,40 @@ export default function AdminDashboard() {
   const [newPrice, setNewPrice] = useState(999)
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState("")
+  
+  // Lead status update states
+  const [callStatus, setCallStatus] = useState("")
+  const [callDetails, setCallDetails] = useState("")
+  const [callDate, setCallDate] = useState("")
+  const [nextFollowUp, setNextFollowUp] = useState("")
+  const [isUpdatingLead, setIsUpdatingLead] = useState(false)
+  const [leadUpdateMessage, setLeadUpdateMessage] = useState("")
+  
+  // Search and filter states
+  const [searchName, setSearchName] = useState("")
+  const [searchPhone, setSearchPhone] = useState("")
+  const [filterCallDateFrom, setFilterCallDateFrom] = useState("")
+  const [filterCallDateTo, setFilterCallDateTo] = useState("")
+  const [filterFollowUpDateFrom, setFilterFollowUpDateFrom] = useState("")
+  const [filterFollowUpDateTo, setFilterFollowUpDateTo] = useState("")
+  const [filterCallStatus, setFilterCallStatus] = useState("")
+  
+  // Mobile menu state
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     checkAuth()
   }, [])
+
+  useEffect(() => {
+    if (selectedLead) {
+      setCallStatus(selectedLead.call_status || "pending")
+      setCallDetails(selectedLead.call_details || "")
+      setCallDate(selectedLead.call_date ? selectedLead.call_date.split('T')[0] : "")
+      setNextFollowUp(selectedLead.next_follow_up ? selectedLead.next_follow_up.split('T')[0] : "")
+      setLeadUpdateMessage("")
+    }
+  }, [selectedLead])
 
   const checkAuth = async () => {
     try {
@@ -152,6 +182,118 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleUpdateLeadStatus = async () => {
+    if (!selectedLead) return
+    
+    setIsUpdatingLead(true)
+    setLeadUpdateMessage("")
+
+    try {
+      const response = await fetch("/api/admin/update-lead-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          access_token: session?.access_token,
+          leadId: selectedLead.id,
+          callStatus: callStatus,
+          callDetails: callDetails,
+          callDate: callDate,
+          nextFollowUp: nextFollowUp
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setLeadUpdateMessage("✅ Lead status updated successfully!")
+        // Update the selected lead with new data
+        setSelectedLead(data.data)
+        // Update the stats with new lead info
+        const updatedBookings = stats.recentBookings.map(b => 
+          b.id === data.data.id ? data.data : b
+        )
+        setStats({ ...stats, recentBookings: updatedBookings })
+        setTimeout(() => setLeadUpdateMessage(""), 5000)
+      } else {
+        setLeadUpdateMessage("❌ Failed to update: " + (data.error || "Unknown error"))
+      }
+    } catch (error) {
+      console.error("Update error:", error)
+      setLeadUpdateMessage("❌ Error: " + error.message)
+    } finally {
+      setIsUpdatingLead(false)
+    }
+  }
+
+  const getFilteredLeads = () => {
+    return stats.recentBookings.filter(lead => {
+      // Search by name
+      if (searchName && !lead.full_name.toLowerCase().includes(searchName.toLowerCase())) {
+        return false
+      }
+
+      // Search by phone
+      if (searchPhone && !lead.mobile_number.includes(searchPhone)) {
+        return false
+      }
+
+      // Filter by call status
+      if (filterCallStatus && lead.call_status !== filterCallStatus) {
+        return false
+      }
+
+      // Filter by call date range
+      if (filterCallDateFrom) {
+        const callDateObj = lead.call_date ? new Date(lead.call_date) : null
+        const filterDateFrom = new Date(filterCallDateFrom)
+        if (!callDateObj || callDateObj < filterDateFrom) {
+          return false
+        }
+      }
+
+      if (filterCallDateTo) {
+        const callDateObj = lead.call_date ? new Date(lead.call_date) : null
+        const filterDateTo = new Date(filterCallDateTo)
+        filterDateTo.setHours(23, 59, 59, 999)
+        if (!callDateObj || callDateObj > filterDateTo) {
+          return false
+        }
+      }
+
+      // Filter by follow-up date range
+      if (filterFollowUpDateFrom) {
+        const followUpDateObj = lead.next_follow_up ? new Date(lead.next_follow_up) : null
+        const filterDateFrom = new Date(filterFollowUpDateFrom)
+        if (!followUpDateObj || followUpDateObj < filterDateFrom) {
+          return false
+        }
+      }
+
+      if (filterFollowUpDateTo) {
+        const followUpDateObj = lead.next_follow_up ? new Date(lead.next_follow_up) : null
+        const filterDateTo = new Date(filterFollowUpDateTo)
+        filterDateTo.setHours(23, 59, 59, 999)
+        if (!followUpDateObj || followUpDateObj > filterDateTo) {
+          return false
+        }
+      }
+
+      return true
+    })
+  }
+
+  const filteredLeads = getFilteredLeads()
+
+  const clearFilters = () => {
+    setSearchName("")
+    setSearchPhone("")
+    setFilterCallDateFrom("")
+    setFilterCallDateTo("")
+    setFilterFollowUpDateFrom("")
+    setFilterFollowUpDateTo("")
+    setFilterCallStatus("")
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -212,16 +354,32 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
+      {/* Mobile Menu Button */}
+      <div className="md:hidden bg-white shadow-md border-b border-gray-200 p-4 flex items-center justify-between sticky top-0 z-50">
+        <h1 className="text-xl font-bold text-gray-900">Admin Panel</h1>
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="p-2 hover:bg-gray-100 rounded-lg"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+
       {/* Sidebar */}
-      <aside className="w-64 bg-white shadow-lg fixed h-full">
-        <div className="p-6 border-b border-gray-200">
+      <aside className={`${sidebarOpen ? 'block' : 'hidden'} md:block w-full md:w-64 bg-white shadow-lg md:fixed md:h-full md:top-0 md:left-0 z-40 transition-all duration-300`}>
+        <div className="p-6 border-b border-gray-200 hidden md:block">
           <h1 className="text-2xl font-bold text-gray-900">Admin Panel</h1>
         </div>
         
         <nav className="p-4">
           <button
-            onClick={() => setActiveTab("dashboard")}
+            onClick={() => {
+              setActiveTab("dashboard")
+              setSidebarOpen(false)
+            }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${
               activeTab === "dashboard"
                 ? "bg-blue-50 text-blue-600"
@@ -235,7 +393,10 @@ export default function AdminDashboard() {
           </button>
           
           <button
-            onClick={() => setActiveTab("leads")}
+            onClick={() => {
+              setActiveTab("leads")
+              setSidebarOpen(false)
+            }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${
               activeTab === "leads"
                 ? "bg-blue-50 text-blue-600"
@@ -252,7 +413,10 @@ export default function AdminDashboard() {
           </button>
 
           <button
-            onClick={() => setActiveTab("settings")}
+            onClick={() => {
+              setActiveTab("settings")
+              setSidebarOpen(false)
+            }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${
               activeTab === "settings"
                 ? "bg-blue-50 text-blue-600"
@@ -267,9 +431,12 @@ export default function AdminDashboard() {
           </button>
         </nav>
 
-        <div className="absolute bottom-0 w-64 p-4 border-t border-gray-200">
+        <div className="md:absolute md:bottom-0 md:w-64 p-4 md:border-t border-gray-200 md:bg-white">
           <button
-            onClick={handleLogout}
+            onClick={() => {
+              handleLogout()
+              setSidebarOpen(false)
+            }}
             className="w-full flex items-center gap-3 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -280,43 +447,51 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
+      {/* Sidebar Overlay for Mobile */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        ></div>
+      )}
+
       {/* Main Content */}
-      <main className="ml-64 flex-1 p-8">
+      <main className="w-full md:ml-64 flex-1 p-4 md:p-8">
         {/* Dashboard View */}
         {activeTab === "dashboard" && (
           <>
             <div className="mb-6">
-              <h2 className="text-3xl font-bold text-gray-900">Dashboard Overview</h2>
-              <p className="text-gray-600 mt-1">Welcome back! Here's your business summary.</p>
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Dashboard Overview</h2>
+              <p className="text-gray-600 mt-1 text-sm md:text-base">Welcome back! Here's your business summary.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl shadow-md">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8">
+          <div className="bg-white p-4 md:p-6 rounded-xl shadow-md">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Leads</p>
-                <p className="text-4xl font-bold text-blue-600 mt-2">
+                <p className="text-xs md:text-sm font-medium text-gray-600">Total Leads</p>
+                <p className="text-2xl md:text-4xl font-bold text-blue-600 mt-2">
                   {stats.totalLeads}
                 </p>
               </div>
-              <div className="bg-blue-100 p-4 rounded-full">
-                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-blue-100 p-3 md:p-4 rounded-full">
+                <svg className="w-6 md:w-8 h-6 md:h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl shadow-md">
+          <div className="bg-white p-4 md:p-6 rounded-xl shadow-md">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                <p className="text-4xl font-bold text-green-600 mt-2">
+                <p className="text-xs md:text-sm font-medium text-gray-600">Total Revenue</p>
+                <p className="text-2xl md:text-4xl font-bold text-green-600 mt-2">
                   ₹{stats.totalAmount.toLocaleString()}
                 </p>
               </div>
-              <div className="bg-green-100 p-4 rounded-full">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-green-100 p-3 md:p-4 rounded-full">
+                <svg className="w-6 md:w-8 h-6 md:h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
@@ -325,26 +500,26 @@ export default function AdminDashboard() {
             </div>
 
             <div className="bg-white rounded-xl shadow-md overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900">Recent Bookings</h2>
+          <div className="px-4 md:px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg md:text-xl font-bold text-gray-900">Recent Bookings</h2>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Name
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="hidden sm:table-cell px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Email
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="hidden md:table-cell px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Mobile
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Amount
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="hidden sm:table-cell px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Date
                   </th>
                 </tr>
@@ -352,26 +527,26 @@ export default function AdminDashboard() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {stats.recentBookings.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan="5" className="px-3 md:px-6 py-8 text-center text-gray-500 text-sm">
                       No bookings yet
                     </td>
                   </tr>
                 ) : (
                   stats.recentBookings.map((booking, index) => (
                     <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm font-medium text-gray-900">
                         {booking.full_name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="hidden sm:table-cell px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm text-gray-500">
                         {booking.email}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="hidden md:table-cell px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm text-gray-500">
                         {booking.mobile_number}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm font-semibold text-green-600">
                         ₹{booking.payment_amount}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="hidden sm:table-cell px-3 md:px-6 py-4 whitespace-nowrap text-xs md:text-sm text-gray-500">
                         {new Date(booking.payment_date).toLocaleDateString()}
                       </td>
                     </tr>
@@ -388,29 +563,118 @@ export default function AdminDashboard() {
         {activeTab === "leads" && (
           <>
             <div className="mb-6">
-              <h2 className="text-3xl font-bold text-gray-900">All Leads</h2>
-              <p className="text-gray-600 mt-1">Manage and view all consultation bookings.</p>
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900">All Leads</h2>
+              <p className="text-gray-600 mt-1 text-sm md:text-base">Manage and view all consultation bookings.</p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
               {/* Leads List */}
-              <div className="lg:col-span-2 bg-white rounded-xl shadow-md overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                  <h3 className="text-lg font-bold text-gray-900">
-                    Total Leads: {stats.recentBookings.length}
-                  </h3>
-                  <div className="text-sm text-gray-600">
-                    Revenue: ₹{stats.totalAmount.toLocaleString()}
+              <div className="lg:col-span-2 bg-white rounded-xl shadow-md overflow-hidden flex flex-col">
+                <div className="px-4 md:px-6 py-4 border-b border-gray-200 bg-gray-50">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
+                    <h3 className="text-base md:text-lg font-bold text-gray-900">
+                      Leads: {filteredLeads.length} / {stats.recentBookings.length}
+                    </h3>
+                    {(searchName || searchPhone || filterCallDateFrom || filterCallDateTo || filterFollowUpDateFrom || filterFollowUpDateTo || filterCallStatus) && (
+                      <button
+                        onClick={clearFilters}
+                        className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 w-full sm:w-auto"
+                      >
+                        Clear Filters
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Search Fields */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                    <input
+                      type="text"
+                      placeholder="Search by name..."
+                      value={searchName}
+                      onChange={(e) => setSearchName(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Search by phone..."
+                      value={searchPhone}
+                      onChange={(e) => setSearchPhone(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    />
+                  </div>
+
+                  {/* Filter Section */}
+                  <div className="border-t border-gray-200 pt-4">
+                    <p className="text-xs font-medium text-gray-700 mb-3 uppercase">Filters</p>
+                    
+                    {/* Call Status Filter */}
+                    <div className="mb-3">
+                      <label className="text-xs font-medium text-gray-600 block mb-2">Call Status</label>
+                      <select
+                        value={filterCallStatus}
+                        onChange={(e) => setFilterCallStatus(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      >
+                        <option value="">All Statuses</option>
+                        <option value="pending">⏳ Pending</option>
+                        <option value="called">✓ Called</option>
+                        <option value="not_interested">✗ Not Interested</option>
+                        <option value="follow_up">⚠ Follow Up</option>
+                        <option value="converted">✓✓ Converted</option>
+                      </select>
+                    </div>
+
+                    {/* Call Date Range */}
+                    <div className="mb-3">
+                      <label className="text-xs font-medium text-gray-600 block mb-2">Call Date Range</label>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <input
+                          type="date"
+                          placeholder="From"
+                          value={filterCallDateFrom}
+                          onChange={(e) => setFilterCallDateFrom(e.target.value)}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        />
+                        <input
+                          type="date"
+                          placeholder="To"
+                          value={filterCallDateTo}
+                          onChange={(e) => setFilterCallDateTo(e.target.value)}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Follow-up Date Range */}
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 block mb-2">Follow-up Date Range</label>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <input
+                          type="date"
+                          placeholder="From"
+                          value={filterFollowUpDateFrom}
+                          onChange={(e) => setFilterFollowUpDateFrom(e.target.value)}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        />
+                        <input
+                          type="date"
+                          placeholder="To"
+                          value={filterFollowUpDateTo}
+                          onChange={(e) => setFilterFollowUpDateTo(e.target.value)}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
                 
-                <div className="divide-y divide-gray-200 max-h-[calc(100vh-250px)] overflow-y-auto">
-                  {stats.recentBookings.length === 0 ? (
+                <div className="divide-y divide-gray-200 max-h-[calc(100vh-550px)] overflow-y-auto flex-1">
+                  {filteredLeads.length === 0 ? (
                     <div className="p-8 text-center text-gray-500">
-                      No leads yet
+                      No leads match your filters
                     </div>
                   ) : (
-                    stats.recentBookings.map((lead, index) => (
+                    filteredLeads.map((lead, index) => (
                       <div
                         key={index}
                         onClick={() => setSelectedLead(lead)}
@@ -433,10 +697,27 @@ export default function AdminDashboard() {
                             </div>
                           </div>
                         </div>
-                        <div className="mt-2">
+                        <div className="mt-2 flex gap-2 flex-wrap">
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                             Paid
                           </span>
+                          {lead.call_status && (
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              lead.call_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              lead.call_status === 'called' ? 'bg-blue-100 text-blue-800' :
+                              lead.call_status === 'not_interested' ? 'bg-red-100 text-red-800' :
+                              lead.call_status === 'follow_up' ? 'bg-orange-100 text-orange-800' :
+                              lead.call_status === 'converted' ? 'bg-green-100 text-green-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {lead.call_status === 'pending' ? '⏳ ' :
+                               lead.call_status === 'called' ? '✓ ' :
+                               lead.call_status === 'not_interested' ? '✗ ' :
+                               lead.call_status === 'follow_up' ? '⚠ ' :
+                               lead.call_status === 'converted' ? '✓✓ ' : ''}
+                              {lead.call_status.replace(/_/g, ' ').toUpperCase()}
+                            </span>
+                          )}
                         </div>
                       </div>
                     ))
@@ -445,21 +726,21 @@ export default function AdminDashboard() {
               </div>
 
               {/* Lead Details Panel */}
-              <div className="bg-white rounded-xl shadow-md overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-                  <h3 className="text-lg font-bold text-gray-900">Lead Details</h3>
+              <div className="bg-white rounded-xl shadow-md overflow-hidden flex flex-col">
+                <div className="px-4 md:px-6 py-4 border-b border-gray-200 bg-gray-50">
+                  <h3 className="text-base md:text-lg font-bold text-gray-900">Lead Details</h3>
                 </div>
                 
                 {selectedLead ? (
-                  <div className="p-6 space-y-4">
+                  <div className="p-4 md:p-6 space-y-4 max-h-[calc(100vh-400px)] md:max-h-[calc(100vh-250px)] overflow-y-auto">
                     <div>
                       <label className="text-xs font-medium text-gray-500 uppercase">Full Name</label>
-                      <p className="text-gray-900 font-medium mt-1">{selectedLead.full_name}</p>
+                      <p className="text-gray-900 font-medium mt-1 break-words">{selectedLead.full_name}</p>
                     </div>
                     
                     <div>
                       <label className="text-xs font-medium text-gray-500 uppercase">Email</label>
-                      <p className="text-gray-900 mt-1">{selectedLead.email}</p>
+                      <p className="text-gray-900 mt-1 break-words">{selectedLead.email}</p>
                     </div>
                     
                     <div>
@@ -469,12 +750,12 @@ export default function AdminDashboard() {
                     
                     <div>
                       <label className="text-xs font-medium text-gray-500 uppercase">Business Idea</label>
-                      <p className="text-gray-900 mt-1">{selectedLead.business_idea}</p>
+                      <p className="text-gray-900 mt-1 break-words">{selectedLead.business_idea}</p>
                     </div>
                     
                     <div>
                       <label className="text-xs font-medium text-gray-500 uppercase">Description</label>
-                      <p className="text-gray-900 mt-1">{selectedLead.short_description}</p>
+                      <p className="text-gray-900 mt-1 break-words">{selectedLead.short_description}</p>
                     </div>
                     
                     <div className="pt-4 border-t border-gray-200">
@@ -505,6 +786,82 @@ export default function AdminDashboard() {
                         <p className="text-xs text-gray-600 mt-1 break-all">{selectedLead.cashfree_payment_id}</p>
                       </div>
                     )}
+
+                    {/* Lead Status Update Section */}
+                    <div className="pt-6 border-t border-gray-200 space-y-4">
+                      <h4 className="font-bold text-gray-900 text-sm">Update Call Status</h4>
+                      
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-2 uppercase">Call Status</label>
+                        <select
+                          value={callStatus}
+                          onChange={(e) => setCallStatus(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        >
+                          <option value="pending">⏳ Pending</option>
+                          <option value="called">✓ Called</option>
+                          <option value="not_interested">✗ Not Interested</option>
+                          <option value="follow_up">⚠ Follow Up</option>
+                          <option value="converted">✓✓ Converted</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-2 uppercase">Call Details</label>
+                        <textarea
+                          value={callDetails}
+                          onChange={(e) => setCallDetails(e.target.value)}
+                          placeholder="Add notes from the call..."
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          rows="3"
+                        ></textarea>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-2 uppercase">Call Date</label>
+                        <input
+                          type="date"
+                          value={callDate}
+                          onChange={(e) => setCallDate(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-2 uppercase">Next Follow Up</label>
+                        <input
+                          type="date"
+                          value={nextFollowUp}
+                          onChange={(e) => setNextFollowUp(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        />
+                      </div>
+
+                      <button
+                        onClick={handleUpdateLeadStatus}
+                        disabled={isUpdatingLead}
+                        className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold text-sm"
+                      >
+                        {isUpdatingLead ? "Updating..." : "Update Lead Status"}
+                      </button>
+
+                      {leadUpdateMessage && (
+                        <div className={`p-3 rounded-lg text-sm ${
+                          leadUpdateMessage.includes("success")
+                            ? "bg-green-50 text-green-700"
+                            : "bg-red-50 text-red-700"
+                        }`}>
+                          {leadUpdateMessage}
+                        </div>
+                      )}
+
+                      {selectedLead.call_status && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
+                          <p className="text-gray-700"><span className="font-semibold">Last Status:</span> {selectedLead.call_status}</p>
+                          {selectedLead.call_date && <p className="text-gray-700 text-xs mt-1">Updated: {new Date(selectedLead.call_date).toLocaleString()}</p>}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <div className="p-8 text-center text-gray-500">
@@ -523,12 +880,12 @@ export default function AdminDashboard() {
         {activeTab === "settings" && (
           <>
             <div className="mb-6">
-              <h2 className="text-3xl font-bold text-gray-900">Settings</h2>
-              <p className="text-gray-600 mt-1">Manage your application settings.</p>
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Settings</h2>
+              <p className="text-gray-600 mt-1 text-sm md:text-base">Manage your application settings.</p>
             </div>
 
             <div className="max-w-2xl">
-              <div className="bg-white rounded-xl shadow-md p-6">
+              <div className="bg-white rounded-xl shadow-md p-4 md:p-6">
                 <h3 className="text-xl font-bold text-gray-900 mb-6">Booking Price</h3>
                 
                 <div className="space-y-4">
@@ -545,7 +902,7 @@ export default function AdminDashboard() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       New Booking Price
                     </label>
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-3">
                       <div className="relative flex-1">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-lg">
                           ₹
@@ -562,7 +919,7 @@ export default function AdminDashboard() {
                       <button
                         onClick={handleSavePrice}
                         disabled={isSaving || newPrice === bookingPrice}
-                        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold"
+                        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold w-full sm:w-auto"
                       >
                         {isSaving ? "Saving..." : "Update Price"}
                       </button>
@@ -570,7 +927,7 @@ export default function AdminDashboard() {
                   </div>
 
                   {saveMessage && (
-                    <div className={`p-4 rounded-lg ${
+                    <div className={`p-4 rounded-lg text-sm ${
                       saveMessage.includes("success")
                         ? "bg-green-50 text-green-700"
                         : "bg-red-50 text-red-700"
