@@ -42,6 +42,9 @@ export default function AdminDashboard() {
   
   // Mobile menu state
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  
+  // Filter modal state
+  const [filterModalOpen, setFilterModalOpen] = useState(false)
 
   useEffect(() => {
     checkAuth()
@@ -456,16 +459,16 @@ export default function AdminDashboard() {
       )}
 
       {/* Main Content */}
-      <main className="w-full md:ml-64 flex-1 p-4 md:p-8">
+      <main className="w-full md:ml-64 flex-1 p-0 md:p-0">
         {/* Dashboard View */}
         {activeTab === "dashboard" && (
           <>
-            <div className="mb-6">
+            <div className="p-4 md:p-8 mb-6">
               <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Dashboard Overview</h2>
               <p className="text-gray-600 mt-1 text-sm md:text-base">Welcome back! Here's your business summary.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8">
+            <div className="px-4 md:px-8 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8">
           <div className="bg-white p-4 md:p-6 rounded-xl shadow-md">
             <div className="flex items-center justify-between">
               <div>
@@ -499,7 +502,7 @@ export default function AdminDashboard() {
           </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+            <div className="px-4 md:px-8 bg-white rounded-xl shadow-md overflow-hidden">
           <div className="px-4 md:px-6 py-4 border-b border-gray-200">
             <h2 className="text-lg md:text-xl font-bold text-gray-900">Recent Bookings</h2>
           </div>
@@ -562,12 +565,13 @@ export default function AdminDashboard() {
         {/* Leads View */}
         {activeTab === "leads" && (
           <>
-            <div className="mb-6">
+            <div className="p-4 md:p-8 pb-0 mb-0">
               <h2 className="text-2xl md:text-3xl font-bold text-gray-900">All Leads</h2>
               <p className="text-gray-600 mt-1 text-sm md:text-base">Manage and view all consultation bookings.</p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+            <div className="h-[calc(100vh-80px)] p-4 md:p-8 pt-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 h-full">
               {/* Leads List */}
               <div className="lg:col-span-2 bg-white rounded-xl shadow-md overflow-hidden flex flex-col">
                 <div className="px-4 md:px-6 py-4 border-b border-gray-200 bg-gray-50">
@@ -575,18 +579,29 @@ export default function AdminDashboard() {
                     <h3 className="text-base md:text-lg font-bold text-gray-900">
                       Leads: {filteredLeads.length} / {stats.recentBookings.length}
                     </h3>
-                    {(searchName || searchPhone || filterCallDateFrom || filterCallDateTo || filterFollowUpDateFrom || filterFollowUpDateTo || filterCallStatus) && (
+                    <div className="flex gap-2 flex-wrap">
                       <button
-                        onClick={clearFilters}
-                        className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 w-full sm:w-auto"
+                        onClick={() => setFilterModalOpen(true)}
+                        className="text-xs bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-start"
                       >
-                        Clear Filters
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                        </svg>
+                        Filters
                       </button>
-                    )}
+                      {(searchName || searchPhone || filterCallDateFrom || filterCallDateTo || filterFollowUpDateFrom || filterFollowUpDateTo || filterCallStatus) && (
+                        <button
+                          onClick={clearFilters}
+                          className="text-xs bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 w-full sm:w-auto"
+                        >
+                          Clear Filters
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Search Fields */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <input
                       type="text"
                       placeholder="Search by name..."
@@ -602,73 +617,9 @@ export default function AdminDashboard() {
                       className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                     />
                   </div>
-
-                  {/* Filter Section */}
-                  <div className="border-t border-gray-200 pt-4">
-                    <p className="text-xs font-medium text-gray-700 mb-3 uppercase">Filters</p>
-                    
-                    {/* Call Status Filter */}
-                    <div className="mb-3">
-                      <label className="text-xs font-medium text-gray-600 block mb-2">Call Status</label>
-                      <select
-                        value={filterCallStatus}
-                        onChange={(e) => setFilterCallStatus(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                      >
-                        <option value="">All Statuses</option>
-                        <option value="pending">⏳ Pending</option>
-                        <option value="called">✓ Called</option>
-                        <option value="not_interested">✗ Not Interested</option>
-                        <option value="follow_up">⚠ Follow Up</option>
-                        <option value="converted">✓✓ Converted</option>
-                      </select>
-                    </div>
-
-                    {/* Call Date Range */}
-                    <div className="mb-3">
-                      <label className="text-xs font-medium text-gray-600 block mb-2">Call Date Range</label>
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        <input
-                          type="date"
-                          placeholder="From"
-                          value={filterCallDateFrom}
-                          onChange={(e) => setFilterCallDateFrom(e.target.value)}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        />
-                        <input
-                          type="date"
-                          placeholder="To"
-                          value={filterCallDateTo}
-                          onChange={(e) => setFilterCallDateTo(e.target.value)}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Follow-up Date Range */}
-                    <div>
-                      <label className="text-xs font-medium text-gray-600 block mb-2">Follow-up Date Range</label>
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        <input
-                          type="date"
-                          placeholder="From"
-                          value={filterFollowUpDateFrom}
-                          onChange={(e) => setFilterFollowUpDateFrom(e.target.value)}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        />
-                        <input
-                          type="date"
-                          placeholder="To"
-                          value={filterFollowUpDateTo}
-                          onChange={(e) => setFilterFollowUpDateTo(e.target.value)}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        />
-                      </div>
-                    </div>
-                  </div>
                 </div>
                 
-                <div className="divide-y divide-gray-200 max-h-[calc(100vh-550px)] overflow-y-auto flex-1">
+                <div className="divide-y divide-gray-200 overflow-y-auto flex-1">
                   {filteredLeads.length === 0 ? (
                     <div className="p-8 text-center text-gray-500">
                       No leads match your filters
@@ -872,6 +823,7 @@ export default function AdminDashboard() {
                   </div>
                 )}
               </div>
+              </div>
             </div>
           </>
         )}
@@ -879,7 +831,7 @@ export default function AdminDashboard() {
         {/* Settings View */}
         {activeTab === "settings" && (
           <>
-            <div className="mb-6">
+            <div className="p-4 md:p-8 mb-6">
               <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Settings</h2>
               <p className="text-gray-600 mt-1 text-sm md:text-base">Manage your application settings.</p>
             </div>
@@ -951,6 +903,101 @@ export default function AdminDashboard() {
               </div>
             </div>
           </>
+        )}
+
+        {/* Filter Modal */}
+        {filterModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+                <h3 className="text-lg font-bold text-gray-900">Advanced Filters</h3>
+                <button
+                  onClick={() => setFilterModalOpen(false)}
+                  className="p-1 hover:bg-gray-200 rounded-lg"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Call Status Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Call Status</label>
+                  <select
+                    value={filterCallStatus}
+                    onChange={(e) => setFilterCallStatus(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">All Statuses</option>
+                    <option value="pending">⏳ Pending</option>
+                    <option value="called">✓ Called</option>
+                    <option value="not_interested">✗ Not Interested</option>
+                    <option value="follow_up">⚠ Follow Up</option>
+                    <option value="converted">✓✓ Converted</option>
+                  </select>
+                </div>
+
+                {/* Call Date Range */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Call Date Range</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="date"
+                      value={filterCallDateFrom}
+                      onChange={(e) => setFilterCallDateFrom(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <input
+                      type="date"
+                      value={filterCallDateTo}
+                      onChange={(e) => setFilterCallDateTo(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Follow-up Date Range */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Follow-up Date Range</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="date"
+                      value={filterFollowUpDateFrom}
+                      onChange={(e) => setFilterFollowUpDateFrom(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <input
+                      type="date"
+                      value={filterFollowUpDateTo}
+                      onChange={(e) => setFilterFollowUpDateTo(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => setFilterModalOpen(false)}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                  >
+                    Apply Filters
+                  </button>
+                  <button
+                    onClick={() => {
+                      clearFilters()
+                      setFilterModalOpen(false)
+                    }}
+                    className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </main>
     </div>
