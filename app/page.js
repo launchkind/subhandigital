@@ -11,33 +11,39 @@ const trustAvatars = [
 
 const testimonials = [
   {
-    name: "Aman K.",
-    role: "SaaS founder",
-    result: "Left with a clear pricing plan and a stronger landing page message.",
+    name: "Rahul M.",
+    role: "Grocery startup owner",
+    result: "Subhan built our delivery app just like Sabjihub — fully functional, fast, and within budget.",
   },
   {
-    name: "Riya S.",
-    role: "D2C founder",
-    result: "Got a faster path to launch and a cleaner offer structure in one call.",
+    name: "Priya S.",
+    role: "E-commerce founder",
+    result: "Got a complete online store with payment integration in under 3 weeks. Highly recommended!",
   },
   {
-    name: "Nikhil P.",
-    role: "Agency owner",
-    result: "Turned confusion into a simple growth roadmap and booked next steps.",
+    name: "Imran K.",
+    role: "Local business owner",
+    result: "Professional website with admin panel. Our inquiries doubled in the first month after launch.",
   },
 ];
 
 const whoItsFor = [
-  "Founders who need pricing clarity fast",
-  "Anyone validating an app, website, or startup idea",
-  "Builders who want direct founder feedback, not theory",
+  "Business owners who need a website or mobile app built from scratch",
+  "Entrepreneurs wanting an e-commerce store like Sabjihub or a custom platform",
+  "Anyone who needs a reliable tech partner — from idea to live product",
+  "Startups and local businesses ready to go digital fast",
 ];
 
 const whatYouGet = [
-  "A clear next-step plan for your business or idea",
-  "Practical feedback on offer, pricing, and positioning",
-  "Founder-led guidance with no fluff or upsell",
+  "A fully built website, mobile app, e-commerce store, or custom software",
+  "Direct work with Subhan — no middlemen, no outsourcing, real quality",
+  "Fast delivery with clean code, admin panel, and full handover",
+  "Ongoing support after launch so your product keeps running smoothly",
 ];
+
+const serviceOptions = ["Website", "Mobile App", "E-commerce", "Custom Software", "Digital Marketing"];
+const budgetOptions = ["₹15k–₹25k", "₹25k–₹50k", "₹50k–₹1L", "₹1L+"];
+const timelineOptions = ["Immediately", "7 Days", "15 Days", "1 Month"];
 
 function IconShell({ children }) {
   return (
@@ -115,6 +121,32 @@ function MessageIcon({ className = "h-4 w-4" }) {
   );
 }
 
+function BuildingIcon({ className = "h-4 w-4" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M9 21V7l6-4v18M9 11h6M9 15h6M9 19h6" />
+    </svg>
+  );
+}
+
+function TagIcon({ className = "h-4 w-4" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h8l9.293 9.293a1 1 0 0 1 0 1.414l-5.586 5.586a1 1 0 0 1-1.414 0L4 10V3z" />
+      <circle cx="7.5" cy="7.5" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
+function MapPinIcon({ className = "h-4 w-4" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 2C8.686 2 6 4.686 6 8c0 5.25 6 14 6 14s6-8.75 6-14c0-3.314-2.686-6-6-6z" />
+      <circle cx="12" cy="8" r="2" />
+    </svg>
+  );
+}
+
 function FloatingField({ label, icon, as = "input", className = "", ...props }) {
   const Component = as;
 
@@ -143,13 +175,52 @@ function FloatingField({ label, icon, as = "input", className = "", ...props }) 
   );
 }
 
+function ChipSelect({ label, options, value, onChange, multi = false }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+      <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+      <div className="flex flex-wrap gap-2">
+        {options.map((option) => {
+          const isSelected = multi ? value.includes(option) : value === option;
+          return (
+            <button
+              key={option}
+              type="button"
+              onClick={() => {
+                if (multi) {
+                  onChange(isSelected ? value.filter((v) => v !== option) : [...value, option]);
+                } else {
+                  onChange(isSelected ? "" : option);
+                }
+              }}
+              className={`rounded-full border px-3 py-1 text-xs font-semibold transition-all duration-150 ${
+                isSelected
+                  ? "border-emerald-500 bg-emerald-500 text-white shadow-sm"
+                  : "border-slate-200 bg-slate-50 text-slate-600 hover:border-emerald-300 hover:text-emerald-700"
+              }`}
+            >
+              {option}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function HomePage() {
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     mobileNumber: "",
-    businessIdea: "",
+    businessName: "",
+    businessType: "",
+    city: "",
+    serviceNeeded: [],
     shortDescription: "",
+    approxBudget: "",
+    projectStart: "",
+    existingWebsite: "",
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const [bookingPrice, setBookingPrice] = useState(999);
@@ -173,6 +244,11 @@ export default function HomePage() {
 
   const isMobileValid = /^\d{10}$/.test(formData.mobileNumber);
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
+  const isChipsValid =
+    formData.serviceNeeded.length > 0 &&
+    formData.approxBudget !== "" &&
+    formData.projectStart !== "" &&
+    formData.existingWebsite !== "";
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -181,9 +257,12 @@ export default function HomePage() {
       alert("Please enter a valid 10-digit mobile number");
       return;
     }
-    
     if (!isEmailValid) {
       alert("Please enter a valid email address");
+      return;
+    }
+    if (!isChipsValid) {
+      alert("Please complete all required selections (Service, Budget, Timeline, Existing Website).");
       return;
     }
 
@@ -224,8 +303,14 @@ export default function HomePage() {
             fullName: formData.fullName,
             email: formData.email,
             mobileNumber: formData.mobileNumber,
-            businessIdea: formData.businessIdea,
+            businessName: formData.businessName,
+            businessType: formData.businessType,
+            city: formData.city,
+            serviceNeeded: formData.serviceNeeded.join(", "),
             shortDescription: formData.shortDescription,
+            approxBudget: formData.approxBudget,
+            projectStart: formData.projectStart,
+            existingWebsite: formData.existingWebsite,
             amount: bookingPrice,
           }
         })
@@ -273,8 +358,14 @@ export default function HomePage() {
                   fullName: formData.fullName,
                   email: formData.email,
                   mobileNumber: formData.mobileNumber,
-                  businessIdea: formData.businessIdea,
+                  businessName: formData.businessName,
+                  businessType: formData.businessType,
+                  city: formData.city,
+                  serviceNeeded: formData.serviceNeeded.join(", "),
                   shortDescription: formData.shortDescription,
+                  approxBudget: formData.approxBudget,
+                  projectStart: formData.projectStart,
+                  existingWebsite: formData.existingWebsite,
                   amount: bookingPrice,
                 },
               }),
@@ -325,14 +416,14 @@ export default function HomePage() {
           <div className="space-y-6">
             <div className="max-w-2xl">
               <p className="text-sm font-semibold uppercase tracking-[0.34em] text-slate-500">
-                Built and scaled Sabjihub
+                Creator of Sabjihub · 40+ Projects Delivered
               </p>
               <h1 className="mt-4 text-4xl font-semibold tracking-tight text-balance text-slate-950 sm:text-5xl lg:text-6xl">
-                Consult Directly with Subhan Ali
+                Get Your Website, App or E-commerce Built by Subhan
               </h1>
               <p className="mt-5 max-w-xl text-base leading-8 text-slate-600 sm:text-lg">
-                Book a focused consultation for pricing clarity, offer strategy, and your next growth move.
-                Designed to build trust instantly and help serious founders move fast.
+                From a simple business website to a full-scale delivery app like Sabjihub — Subhan builds
+                real digital products fast, at honest prices. Fill the form and get a call back within 24 hours.
               </p>
             </div>
 
@@ -369,29 +460,28 @@ export default function HomePage() {
                       <svg className="h-5 w-5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                       </svg>
-                      <span className="text-sm font-bold text-emerald-900">First 50 Founders Only</span>
+                      <span className="text-sm font-bold text-emerald-900">Limited Project Slots This Month</span>
                     </div>
                   </div>
                   
                   <div className="mt-4 rounded-xl border-2 border-lime-200 bg-lime-50/80 p-4 backdrop-blur-sm">
                     <p className="text-sm font-bold text-emerald-900 flex items-center gap-2">
                       <span className="text-lg">⏰</span>
-                      Why Just {bookingPrice}?
+                      Why Just ₹{bookingPrice}?
                     </p>
                     <p className="mt-2 text-xs leading-5 text-emerald-800">
-                      This is a <span className="font-bold">one-time launch offer</span> to help early founders get started. 
-                      Regular price ₹1499 returns after 50 bookings. Don't miss out!
+                      This is a <span className="font-bold">small project booking fee</span> to confirm your interest and schedule a free discovery call. Your actual project cost is discussed on the call — no hidden charges.
                     </p>
                   </div>
                   
                   <div className="mt-4 grid grid-cols-2 gap-3">
                     <div className="rounded-xl border-2 border-emerald-200 bg-white/80 p-3 backdrop-blur-sm">
-                      <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">✓ No Spam</p>
-                      <p className="mt-1 text-xs text-slate-600">Pure value</p>
+                      <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">✓ Free Call</p>
+                      <p className="mt-1 text-xs text-slate-600">Discovery included</p>
                     </div>
                     <div className="rounded-xl border-2 border-emerald-200 bg-white/80 p-3 backdrop-blur-sm">
-                      <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">✓ No Upsell</p>
-                      <p className="mt-1 text-xs text-slate-600">Just results</p>
+                      <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">✓ Fast Delivery</p>
+                      <p className="mt-1 text-xs text-slate-600">Real products built</p>
                     </div>
                   </div>
                 </div>
@@ -402,9 +492,9 @@ export default function HomePage() {
                   <div className="absolute -right-4 -top-4 rounded-full bg-emerald-600 px-3 py-1 text-xs font-bold text-white shadow-lg animate-pulse">
                     🔥 HOT DEAL
                   </div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.28em] text-emerald-600">Book Now</p>
+                  <p className="text-sm font-semibold uppercase tracking-[0.28em] text-emerald-600">Start Your Project</p>
                   <p className="mt-2 text-sm font-semibold leading-6 text-slate-700">
-                    Reserve your consultation slot at the lowest price ever!
+                    Fill the form below — Subhan will personally call you within 24 hours.
                   </p>
                 </div>
 
@@ -416,7 +506,7 @@ export default function HomePage() {
                       type="text"
                       autoComplete="name"
                       required
-                      label="Full name"
+                      label="Full Name *"
                       icon={<UserIcon className="h-4 w-4" />}
                       value={formData.fullName}
                       onChange={(event) =>
@@ -425,12 +515,34 @@ export default function HomePage() {
                     />
 
                     <FloatingField
+                      id="mobileNumber-mobile"
+                      name="mobileNumber"
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]{10}"
+                      autoComplete="tel"
+                      required
+                      label="Mobile Number (WhatsApp) *"
+                      icon={<PhoneIcon className="h-4 w-4" />}
+                      value={formData.mobileNumber}
+                      onChange={(event) =>
+                        setFormData((current) => ({
+                          ...current,
+                          mobileNumber: event.target.value.replace(/\D/g, "").slice(0, 10),
+                        }))
+                      }
+                    />
+                    {formData.mobileNumber.length > 0 && !isMobileValid ? (
+                      <p className="text-xs text-rose-500">Enter a valid 10-digit mobile number.</p>
+                    ) : null}
+
+                    <FloatingField
                       id="email-mobile"
                       name="email"
                       type="email"
                       autoComplete="email"
                       required
-                      label="Email address"
+                      label="Email Address *"
                       icon={
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.9 5.3c.7.4 1.5.4 2.2 0L21 8M5 19h14c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2z" />
@@ -446,54 +558,88 @@ export default function HomePage() {
                     ) : null}
 
                     <FloatingField
-                      id="mobileNumber-mobile"
-                      name="mobileNumber"
-                      type="tel"
-                      inputMode="numeric"
-                      pattern="[0-9]{10}"
-                      autoComplete="tel"
-                      required
-                      label="Mobile number"
-                      icon={<PhoneIcon className="h-4 w-4" />}
-                      value={formData.mobileNumber}
-                      onChange={(event) =>
-                        setFormData((current) => ({
-                          ...current,
-                          mobileNumber: event.target.value.replace(/\D/g, "").slice(0, 10),
-                        }))
-                      }
-                    />
-                    {formData.mobileNumber.length > 0 && !isMobileValid ? (
-                      <p className="text-xs text-rose-500">Enter a valid 10-digit mobile number.</p>
-                    ) : null}
-
-                    <FloatingField
-                      id="businessIdea-mobile"
-                      name="businessIdea"
+                      id="businessName-mobile"
+                      name="businessName"
                       type="text"
                       autoComplete="organization"
                       required
-                      label="Business idea"
-                      icon={<IdeaIcon className="h-4 w-4" />}
-                      value={formData.businessIdea}
+                      label="Business Name *"
+                      icon={<BuildingIcon className="h-4 w-4" />}
+                      value={formData.businessName}
                       onChange={(event) =>
-                        setFormData((current) => ({ ...current, businessIdea: event.target.value }))
+                        setFormData((current) => ({ ...current, businessName: event.target.value }))
                       }
+                    />
+
+                    <FloatingField
+                      id="businessType-mobile"
+                      name="businessType"
+                      type="text"
+                      required
+                      label="Business Type *"
+                      icon={<TagIcon className="h-4 w-4" />}
+                      value={formData.businessType}
+                      onChange={(event) =>
+                        setFormData((current) => ({ ...current, businessType: event.target.value }))
+                      }
+                    />
+
+                    <FloatingField
+                      id="city-mobile"
+                      name="city"
+                      type="text"
+                      autoComplete="address-level2"
+                      required
+                      label="City *"
+                      icon={<MapPinIcon className="h-4 w-4" />}
+                      value={formData.city}
+                      onChange={(event) =>
+                        setFormData((current) => ({ ...current, city: event.target.value }))
+                      }
+                    />
+
+                    <ChipSelect
+                      label="Aapko kya chahiye? *"
+                      options={serviceOptions}
+                      value={formData.serviceNeeded}
+                      onChange={(val) => setFormData((current) => ({ ...current, serviceNeeded: val }))}
+                      multi
                     />
 
                     <FloatingField
                       as="textarea"
                       id="shortDescription-mobile"
                       name="shortDescription"
-                      rows="5"
+                      rows="4"
                       required
-                      label="Short description"
+                      label="Project ka short description *"
                       icon={<MessageIcon className="h-4 w-4" />}
                       value={formData.shortDescription}
                       onChange={(event) =>
                         setFormData((current) => ({ ...current, shortDescription: event.target.value }))
                       }
                       className="resize-none"
+                    />
+
+                    <ChipSelect
+                      label="Approx Budget *"
+                      options={budgetOptions}
+                      value={formData.approxBudget}
+                      onChange={(val) => setFormData((current) => ({ ...current, approxBudget: val }))}
+                    />
+
+                    <ChipSelect
+                      label="Project kab start karna hai? *"
+                      options={timelineOptions}
+                      value={formData.projectStart}
+                      onChange={(val) => setFormData((current) => ({ ...current, projectStart: val }))}
+                    />
+
+                    <ChipSelect
+                      label="Existing Website hai? *"
+                      options={["Yes", "No"]}
+                      value={formData.existingWebsite}
+                      onChange={(val) => setFormData((current) => ({ ...current, existingWebsite: val }))}
                     />
                   </div>
 
@@ -508,16 +654,16 @@ export default function HomePage() {
                         "Processing..."
                       ) : (
                         <>
-                          <span>⚡ Book Now {bookingPrice}</span>
+                          <span>⚡ Book Now — ₹{bookingPrice}</span>
                         </>
                       )}
                     </button>
                   </div>
 
                   <div className="space-y-1.5 text-center">
-                    <p className="text-sm text-slate-500">Instant confirmation after payment</p>
+                    <p className="text-sm text-slate-500">Subhan will call you within 24 hours</p>
                     <p className="text-xs text-slate-500">Secure payment via Cashfree</p>
-                    <p className="text-xs text-slate-500">We will contact you within 24 hours</p>
+                    <p className="text-xs text-slate-500">Booking fee confirms your spot — project cost discussed on call</p>
                   </div>
                 </form>
               </div>
@@ -535,8 +681,8 @@ export default function HomePage() {
                 ))}
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-900">Trusted by 100+ founders</p>
-                <p className="text-xs text-slate-500">Founders, operators, and solo builders</p>
+                <p className="text-sm font-semibold text-slate-900">40+ projects delivered</p>
+                <p className="text-xs text-slate-500">Websites, apps & e-commerce across India</p>
               </div>
             </div>
 
@@ -589,29 +735,28 @@ export default function HomePage() {
                     <svg className="h-5 w-5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                     </svg>
-                    <span className="text-sm font-bold text-emerald-900">First 50 Founders Only</span>
+                    <span className="text-sm font-bold text-emerald-900">Limited Project Slots This Month</span>
                   </div>
                 </div>
-                
+
                 <div className="mt-4 rounded-xl border-2 border-lime-200 bg-lime-50/80 p-4 backdrop-blur-sm">
                   <p className="text-sm font-bold text-emerald-900 flex items-center gap-2">
                     <span className="text-lg">⏰</span>
-                    Why Just {bookingPrice}?
+                    Why Just ₹{bookingPrice}?
                   </p>
                   <p className="mt-2 text-xs leading-5 text-emerald-800">
-                    This is a <span className="font-bold">one-time launch offer</span> to help early founders get started. 
-                    Regular price ₹1499 returns after 50 bookings. Don't miss out!
+                    This is a <span className="font-bold">small project booking fee</span> to confirm your interest and schedule a free discovery call. Your actual project cost is discussed on the call — no hidden charges.
                   </p>
                 </div>
-                
+
                 <div className="mt-4 grid grid-cols-2 gap-3">
                   <div className="rounded-xl border-2 border-emerald-200 bg-white/80 p-3 backdrop-blur-sm">
-                    <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">✓ No Spam</p>
-                    <p className="mt-1 text-xs text-slate-600">Pure value</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">✓ Free Call</p>
+                    <p className="mt-1 text-xs text-slate-600">Discovery included</p>
                   </div>
                   <div className="rounded-xl border-2 border-emerald-200 bg-white/80 p-3 backdrop-blur-sm">
-                    <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">✓ No Upsell</p>
-                    <p className="mt-1 text-xs text-slate-600">Just results</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">✓ Fast Delivery</p>
+                    <p className="mt-1 text-xs text-slate-600">Real products built</p>
                   </div>
                 </div>
               </div>
@@ -658,7 +803,7 @@ export default function HomePage() {
                 <div className="absolute -right-4 -top-4 rounded-full bg-gradient-to-r from-emerald-600 to-lime-600 px-4 py-1.5 text-xs font-black text-white shadow-lg animate-pulse">
                   ⚡ FLASH SALE
                 </div>
-                <p className="text-sm font-bold uppercase tracking-[0.28em] text-emerald-600">Limited Offer</p>
+                <p className="text-sm font-bold uppercase tracking-[0.28em] text-emerald-600">Start Your Project</p>
                 <div className="mt-4 space-y-2">
                   <div className="flex items-center gap-3">
                     <div className="flex items-start gap-1">
@@ -674,17 +819,17 @@ export default function HomePage() {
                   </div>
                 </div>
                 <p className="mt-3 text-sm font-bold leading-6 text-slate-700">
-                  Grab your consultation at the lowest price ever!
+                  Book your spot — Subhan will personally call you within 24 hours.
                 </p>
                 <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 border-2 border-emerald-200">
                   <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                   </svg>
-                  First 50 founders only
+                  Limited slots available
                 </div>
               </div>
 
-              <form id="booking-form" onSubmit={handleSubmit} className="mt-8 space-y-6">
+              <form id="booking-form" onSubmit={handleSubmit} className="mt-8 space-y-4">
                 <div className="space-y-4">
                   <FloatingField
                     id="fullName"
@@ -692,7 +837,7 @@ export default function HomePage() {
                     type="text"
                     autoComplete="name"
                     required
-                    label="Full name"
+                    label="Full Name *"
                     icon={<UserIcon className="h-4 w-4" />}
                     value={formData.fullName}
                     onChange={(event) =>
@@ -701,12 +846,34 @@ export default function HomePage() {
                   />
 
                   <FloatingField
+                    id="mobileNumber"
+                    name="mobileNumber"
+                    type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]{10}"
+                    autoComplete="tel"
+                    required
+                    label="Mobile Number (WhatsApp) *"
+                    icon={<PhoneIcon className="h-4 w-4" />}
+                    value={formData.mobileNumber}
+                    onChange={(event) =>
+                      setFormData((current) => ({
+                        ...current,
+                        mobileNumber: event.target.value.replace(/\D/g, "").slice(0, 10),
+                      }))
+                    }
+                  />
+                  {formData.mobileNumber.length > 0 && !isMobileValid ? (
+                    <p className="text-xs text-rose-500">Enter a valid 10-digit mobile number.</p>
+                  ) : null}
+
+                  <FloatingField
                     id="email"
                     name="email"
                     type="email"
                     autoComplete="email"
                     required
-                    label="Email address"
+                    label="Email Address *"
                     icon={
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.9 5.3c.7.4 1.5.4 2.2 0L21 8M5 19h14c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2z" />
@@ -722,54 +889,88 @@ export default function HomePage() {
                   ) : null}
 
                   <FloatingField
-                    id="mobileNumber"
-                    name="mobileNumber"
-                    type="tel"
-                    inputMode="numeric"
-                    pattern="[0-9]{10}"
-                    autoComplete="tel"
-                    required
-                    label="Mobile number"
-                    icon={<PhoneIcon className="h-4 w-4" />}
-                    value={formData.mobileNumber}
-                    onChange={(event) =>
-                      setFormData((current) => ({
-                        ...current,
-                        mobileNumber: event.target.value.replace(/\D/g, "").slice(0, 10),
-                      }))
-                    }
-                  />
-                  {formData.mobileNumber.length > 0 && !isMobileValid ? (
-                    <p className="text-xs text-rose-500">Enter a valid 10-digit mobile number.</p>
-                  ) : null}
-
-                  <FloatingField
-                    id="businessIdea"
-                    name="businessIdea"
+                    id="businessName"
+                    name="businessName"
                     type="text"
                     autoComplete="organization"
                     required
-                    label="Business idea"
-                    icon={<IdeaIcon className="h-4 w-4" />}
-                    value={formData.businessIdea}
+                    label="Business Name *"
+                    icon={<BuildingIcon className="h-4 w-4" />}
+                    value={formData.businessName}
                     onChange={(event) =>
-                      setFormData((current) => ({ ...current, businessIdea: event.target.value }))
+                      setFormData((current) => ({ ...current, businessName: event.target.value }))
                     }
+                  />
+
+                  <FloatingField
+                    id="businessType"
+                    name="businessType"
+                    type="text"
+                    required
+                    label="Business Type *"
+                    icon={<TagIcon className="h-4 w-4" />}
+                    value={formData.businessType}
+                    onChange={(event) =>
+                      setFormData((current) => ({ ...current, businessType: event.target.value }))
+                    }
+                  />
+
+                  <FloatingField
+                    id="city"
+                    name="city"
+                    type="text"
+                    autoComplete="address-level2"
+                    required
+                    label="City *"
+                    icon={<MapPinIcon className="h-4 w-4" />}
+                    value={formData.city}
+                    onChange={(event) =>
+                      setFormData((current) => ({ ...current, city: event.target.value }))
+                    }
+                  />
+
+                  <ChipSelect
+                    label="Aapko kya chahiye? *"
+                    options={serviceOptions}
+                    value={formData.serviceNeeded}
+                    onChange={(val) => setFormData((current) => ({ ...current, serviceNeeded: val }))}
+                    multi
                   />
 
                   <FloatingField
                     as="textarea"
                     id="shortDescription"
                     name="shortDescription"
-                    rows="5"
+                    rows="4"
                     required
-                    label="Short description"
+                    label="Project ka short description *"
                     icon={<MessageIcon className="h-4 w-4" />}
                     value={formData.shortDescription}
                     onChange={(event) =>
                       setFormData((current) => ({ ...current, shortDescription: event.target.value }))
                     }
                     className="resize-none"
+                  />
+
+                  <ChipSelect
+                    label="Approx Budget *"
+                    options={budgetOptions}
+                    value={formData.approxBudget}
+                    onChange={(val) => setFormData((current) => ({ ...current, approxBudget: val }))}
+                  />
+
+                  <ChipSelect
+                    label="Project kab start karna hai? *"
+                    options={timelineOptions}
+                    value={formData.projectStart}
+                    onChange={(val) => setFormData((current) => ({ ...current, projectStart: val }))}
+                  />
+
+                  <ChipSelect
+                    label="Existing Website hai? *"
+                    options={["Yes", "No"]}
+                    value={formData.existingWebsite}
+                    onChange={(val) => setFormData((current) => ({ ...current, existingWebsite: val }))}
                   />
                 </div>
 
