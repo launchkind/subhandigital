@@ -293,31 +293,48 @@ export default function HomePage() {
         throw new Error(orderData.error || "Failed to create order");
       }
 
+      // Build booking payload once — used for both sessionStorage backup and DB insert
+      const bookingPayload = {
+        fullName: formData.fullName,
+        email: formData.email,
+        mobileNumber: formData.mobileNumber,
+        businessName: formData.businessName,
+        businessType: formData.businessType,
+        city: formData.city,
+        serviceNeeded: formData.serviceNeeded.join(", "),
+        shortDescription: formData.shortDescription,
+        approxBudget: formData.approxBudget,
+        projectStart: formData.projectStart,
+        existingWebsite: formData.existingWebsite,
+        amount: bookingPrice,
+      };
+
+      // Save to sessionStorage BEFORE payment so callback can recover if DB fails
+      sessionStorage.setItem(`booking_${orderData.order.orderId}`, JSON.stringify(bookingPayload));
+
       // Store booking data in database as pending
       const pendingBookingResponse = await fetch("/api/create-pending-booking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           orderId: orderData.order.orderId,
-          bookingData: {
-            fullName: formData.fullName,
-            email: formData.email,
-            mobileNumber: formData.mobileNumber,
-            businessName: formData.businessName,
-            businessType: formData.businessType,
-            city: formData.city,
-            serviceNeeded: formData.serviceNeeded.join(", "),
-            shortDescription: formData.shortDescription,
-            approxBudget: formData.approxBudget,
-            projectStart: formData.projectStart,
-            existingWebsite: formData.existingWebsite,
-            amount: bookingPrice,
-          }
-        })
+          bookingData: bookingPayload,
+        }),
       });
 
       if (!pendingBookingResponse.ok) {
-        console.warn("Failed to create pending booking, continuing anyway");
+        const errData = await pendingBookingResponse.json().catch(() => ({}));
+        console.error("Failed to save pending booking:", errData);
+        alert("Unable to save your details before payment. Please try again.\n\nError: " + (errData.error || "Server error"));
+        setIsProcessing(false);
+        return;
+      }
+
+      const pendingData = await pendingBookingResponse.json();
+      if (!pendingData.success) {
+        alert("Unable to save your details before payment. Please try again.");
+        setIsProcessing(false);
+        return;
       }
 
       // Step 2: Initialize Cashfree SDK

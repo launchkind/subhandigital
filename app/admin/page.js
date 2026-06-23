@@ -567,7 +567,7 @@ export default function AdminDashboard() {
           <>
             <div className="p-4 md:p-8 pb-0 mb-0">
               <h2 className="text-2xl md:text-3xl font-bold text-gray-900">All Leads</h2>
-              <p className="text-gray-600 mt-1 text-sm md:text-base">Manage and view all consultation bookings.</p>
+              <p className="text-gray-600 mt-1 text-sm md:text-base">Manage and view all project booking leads.</p>
             </div>
 
             <div className="h-[calc(100vh-80px)] p-4 md:p-8 pt-4">
@@ -695,17 +695,68 @@ export default function AdminDashboard() {
                     </div>
                     
                     <div>
-                      <label className="text-xs font-medium text-gray-500 uppercase">Mobile Number</label>
+                      <label className="text-xs font-medium text-gray-500 uppercase">Mobile Number (WhatsApp)</label>
                       <p className="text-gray-900 mt-1">{selectedLead.mobile_number}</p>
                     </div>
-                    
-                    <div>
-                      <label className="text-xs font-medium text-gray-500 uppercase">Business Idea</label>
-                      <p className="text-gray-900 mt-1 break-words">{selectedLead.business_idea}</p>
+
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 uppercase">Business Name</label>
+                        <p className="text-gray-900 font-medium mt-1 break-words">{selectedLead.business_name || <span className="text-gray-400 italic">—</span>}</p>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 uppercase">Business Type</label>
+                        <p className="text-gray-900 mt-1 break-words">{selectedLead.business_type || <span className="text-gray-400 italic">—</span>}</p>
+                      </div>
                     </div>
-                    
+
                     <div>
-                      <label className="text-xs font-medium text-gray-500 uppercase">Description</label>
+                      <label className="text-xs font-medium text-gray-500 uppercase">City</label>
+                      <p className="text-gray-900 mt-1">{selectedLead.city || <span className="text-gray-400 italic">—</span>}</p>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 uppercase">Service Needed</label>
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {selectedLead.service_needed
+                          ? selectedLead.service_needed.split(", ").map((s) => (
+                              <span key={s} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                {s}
+                              </span>
+                            ))
+                          : <span className="text-gray-400 italic text-sm">—</span>
+                        }
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 uppercase">Approx Budget</label>
+                        <p className="text-gray-900 font-semibold mt-1">{selectedLead.approx_budget || <span className="text-gray-400 italic font-normal">—</span>}</p>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 uppercase">Project Start</label>
+                        <p className="text-gray-900 mt-1">{selectedLead.project_start || <span className="text-gray-400 italic">—</span>}</p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 uppercase">Existing Website</label>
+                      {selectedLead.existing_website ? (
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-1 ${
+                          selectedLead.existing_website === "Yes"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-700"
+                        }`}>
+                          {selectedLead.existing_website}
+                        </span>
+                      ) : (
+                        <p className="text-gray-400 italic text-sm mt-1">—</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 uppercase">Project Description</label>
                       <p className="text-gray-900 mt-1 break-words">{selectedLead.short_description}</p>
                     </div>
                     
